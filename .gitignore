@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.blend
+cleanup-unused-textures-report.json
+cleanup_unused_textures.py
+.DS_Store
+Thumbs.db
