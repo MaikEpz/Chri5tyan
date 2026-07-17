@@ -17,10 +17,11 @@ const LIGHT_PERMEABLE_MESHES = new Set(["Object_25"]);
 
 const ktx2Loaders = new WeakMap();
 
-function getKtx2Loader(renderer) {
+function getKtx2Loader(renderer, lowPowerMode) {
   if (!ktx2Loaders.has(renderer)) {
     const loader = new KTX2Loader()
       .setTranscoderPath(`${import.meta.env.BASE_URL}basis/`)
+      .setWorkerLimit(lowPowerMode ? 1 : 2)
       .detectSupport(renderer);
     ktx2Loaders.set(renderer, loader);
   }
@@ -28,10 +29,19 @@ function getKtx2Loader(renderer) {
   return ktx2Loaders.get(renderer);
 }
 
-export function LoadedModel({ source, onReady, onScreenAnchor, onExportedLightsChange }) {
+export function LoadedModel({
+  lowPowerMode = false,
+  source,
+  onReady,
+  onScreenAnchor,
+  onExportedLightsChange,
+}) {
   const groupRef = useRef(null);
   const renderer = useThree((state) => state.gl);
-  const ktx2Loader = useMemo(() => getKtx2Loader(renderer), [renderer]);
+  const ktx2Loader = useMemo(
+    () => getKtx2Loader(renderer, lowPowerMode),
+    [lowPowerMode, renderer],
+  );
   const configureLoader = useCallback(
     (loader) => loader.setKTX2Loader(ktx2Loader),
     [ktx2Loader],
@@ -59,13 +69,14 @@ export function LoadedModel({ source, onReady, onScreenAnchor, onExportedLightsC
     scene.traverse((object) => {
       if (object.isLight) {
         configureExportedLight(object);
+        if (lowPowerMode) object.castShadow = false;
         return;
       }
 
       if (!object.isMesh) return;
       const isLightPermeable = LIGHT_PERMEABLE_MESHES.has(object.name);
-      object.castShadow = !isLightPermeable;
-      object.receiveShadow = true;
+      object.castShadow = !lowPowerMode && !isLightPermeable;
+      object.receiveShadow = !lowPowerMode;
       if (object.name === "Object5") {
         object.material = new THREE.MeshBasicMaterial({
           color: "#10282f",
@@ -85,7 +96,7 @@ export function LoadedModel({ source, onReady, onScreenAnchor, onExportedLightsC
           }
           const lightConfig = EMISSIVE_LIGHT_MATERIALS.get(material.name);
           if (lightConfig) {
-            object.castShadow = true;
+            object.castShadow = !lowPowerMode;
             material.emissive = new THREE.Color(lightConfig.color);
             material.emissiveIntensity = material.name === "m_lamp" ? 5.2 : 2.6;
             material.toneMapped = false;
@@ -112,7 +123,7 @@ export function LoadedModel({ source, onReady, onScreenAnchor, onExportedLightsC
         });
       }
     });
-  }, [scene]);
+  }, [lowPowerMode, scene]);
 
   return (
     <group ref={groupRef}>

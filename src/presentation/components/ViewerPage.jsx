@@ -5,15 +5,17 @@ import * as THREE from "three";
 import { CAMERA } from "../../infrastructure/react-three/sceneConfig.js";
 
 export function ViewerPage({ modelAsset, SceneComponent }) {
+  const lowPowerMode = isLowPowerDevice();
+
   return (
     <main className="viewer-shell">
       <section className="viewer-stage" aria-label={`Visor 3D del modelo ${modelAsset.name}`}>
         <Canvas
           className="viewer-canvas"
           camera={{ fov: 58, near: 0.1, far: 1000, position: CAMERA.position.toArray() }}
-          dpr={[1, 2]}
+          dpr={lowPowerMode ? [0.6, 1] : [1, 2]}
           gl={{
-            antialias: true,
+            antialias: !lowPowerMode,
             alpha: false,
             powerPreference: "high-performance",
           }}
@@ -21,14 +23,14 @@ export function ViewerPage({ modelAsset, SceneComponent }) {
             gl.toneMapping = THREE.AgXToneMapping;
             gl.toneMappingExposure = 0.85;
           }}
-          shadows="percentage"
+          shadows={lowPowerMode ? false : "percentage"}
         >
           <color attach="background" args={["#050607"]} />
           <DynamicExposure />
           <PerformanceMonitor>
             <AdaptiveDpr />
             <Suspense fallback={null}>
-              <SceneComponent modelAsset={modelAsset} />
+              <SceneComponent lowPowerMode={lowPowerMode} modelAsset={modelAsset} />
             </Suspense>
           </PerformanceMonitor>
         </Canvas>
@@ -43,6 +45,10 @@ export function ViewerPage({ modelAsset, SceneComponent }) {
       </section>
     </main>
   );
+}
+
+function isLowPowerDevice() {
+  return window.matchMedia("(pointer: coarse), (max-width: 768px)").matches;
 }
 
 function DynamicExposure() {

@@ -9,7 +9,7 @@ import { CAMERA } from "./sceneConfig.js";
 const CAMERA_POSITION = CAMERA.position.toArray();
 const CAMERA_TARGET = CAMERA.target.toArray();
 
-export function ViewerScene({ modelAsset }) {
+export function ViewerScene({ lowPowerMode = false, modelAsset }) {
   const [modelReady, setModelReady] = useState(false);
   const [screenAnchor, setScreenAnchor] = useState(null);
   const [monitorFocused, setMonitorFocused] = useState(false);
@@ -26,8 +26,9 @@ export function ViewerScene({ modelAsset }) {
   return (
     <>
       <SceneLighting useFallback={!hasModelLights} />
-      <AmbientDust />
+      {!lowPowerMode && <AmbientDust />}
       <LoadedModel
+        lowPowerMode={lowPowerMode}
         source={modelAsset.source}
         onReady={handleModelReady}
         onScreenAnchor={setScreenAnchor}
