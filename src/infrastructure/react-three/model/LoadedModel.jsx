@@ -6,7 +6,13 @@ import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
 import { EMISSIVE_LIGHT_MATERIALS } from "../sceneConfig.js";
 import { ModelLightRig } from "../lights/LightRigs.jsx";
 import { configureExportedLight, getModelLightAnchors, hasExportedLights } from "../lights/lightUtils.js";
-import { cloneMaterial, getMaterialList, getMonitorScreenAnchor, isNearlyBlackMaterial } from "./modelUtils.js";
+import {
+  cloneMaterial,
+  getMaterialList,
+  getMonitorScreenAnchor,
+  getPhoneScreenAnchor,
+  isNearlyBlackMaterial,
+} from "./modelUtils.js";
 
 const DESK_EMISSIVE = new Map([
   ["Mesh_0.001", { color: "#302820", intensity: 0.026 }],
@@ -34,6 +40,7 @@ export function LoadedModel({
   source,
   onReady,
   onScreenAnchor,
+  onPhoneScreenAnchor,
   onExportedLightsChange,
 }) {
   const groupRef = useRef(null);
@@ -62,8 +69,9 @@ export function LoadedModel({
     setModelLights(containsExportedLights ? { points: [] } : getModelLightAnchors(scene, group));
     onExportedLightsChange(containsExportedLights);
     onScreenAnchor(getMonitorScreenAnchor(scene));
+    onPhoneScreenAnchor(getPhoneScreenAnchor(scene));
     onReady();
-  }, [onExportedLightsChange, onReady, onScreenAnchor, scene]);
+  }, [onExportedLightsChange, onPhoneScreenAnchor, onReady, onScreenAnchor, scene]);
 
   useEffect(() => {
     scene.traverse((object) => {

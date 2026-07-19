@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 export const CAMERA = {
-  position: new THREE.Vector3(0.481, 9.5, -0.718),
+  position: new THREE.Vector3(-0.04805, 9.3375, -0.8571),
   target: new THREE.Vector3(-10.1, 6.25, -3.5),
 };
 

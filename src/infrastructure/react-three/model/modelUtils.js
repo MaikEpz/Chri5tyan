@@ -1,15 +1,25 @@
 import * as THREE from "three";
 import { CAMERA } from "../sceneConfig.js";
 
-const OPTIMIZED_SCREEN_RIGHT = new THREE.Vector3(
+const DESKTOP_SCREEN_RIGHT = new THREE.Vector3(
   0.02103884234620266,
   -0.00039778650089098094,
   -0.999778579925891,
 );
-const OPTIMIZED_SCREEN_UP = new THREE.Vector3(
+const DESKTOP_SCREEN_UP = new THREE.Vector3(
   0.017808371750151528,
   0.999841418107791,
   -0.000023061002385509428,
+);
+const PHONE_SCREEN_RIGHT = new THREE.Vector3(
+  0.22159447796958734,
+  -2.4466911090210087e-9,
+  0.9751389066863173,
+);
+const PHONE_SCREEN_UP = new THREE.Vector3(
+  -0.9750956625219009,
+  0.009417415774787543,
+  0.2215846592413386,
 );
 
 export function cloneMaterial(material) {
@@ -36,7 +46,24 @@ export function getMonitorScreenAnchor(scene) {
     if (hasMonitorMaterial) optimizedMonitorPanel = object;
   });
 
-  return optimizedMonitorPanel ? getOptimizedMonitorAnchor(optimizedMonitorPanel) : null;
+  return optimizedMonitorPanel
+    ? getOptimizedScreenAnchor(optimizedMonitorPanel, DESKTOP_SCREEN_RIGHT, DESKTOP_SCREEN_UP)
+    : null;
+}
+
+export function getPhoneScreenAnchor(scene) {
+  let phonePanel = null;
+  scene.traverse((object) => {
+    if (phonePanel || !object.isMesh) return;
+    const hasPhoneMaterial = getMaterialList(object.material).some(
+      (material) => material.name === "pIJKfZsazmcpEiU",
+    );
+    if (hasPhoneMaterial) phonePanel = object;
+  });
+
+  return phonePanel
+    ? getOptimizedScreenAnchor(phonePanel, PHONE_SCREEN_RIGHT, PHONE_SCREEN_UP)
+    : null;
 }
 
 function getLegacyMonitorAnchor(monitorPanel) {
@@ -63,12 +90,12 @@ function getLegacyMonitorAnchor(monitorPanel) {
   };
 }
 
-function getOptimizedMonitorAnchor(monitorPanel) {
-  monitorPanel.updateWorldMatrix(true, false);
-  const positionAttribute = monitorPanel.geometry.getAttribute("position");
-  const panelQuaternion = monitorPanel.getWorldQuaternion(new THREE.Quaternion());
-  const screenRight = OPTIMIZED_SCREEN_RIGHT.clone().applyQuaternion(panelQuaternion).normalize();
-  const screenUp = OPTIMIZED_SCREEN_UP.clone().applyQuaternion(panelQuaternion).normalize();
+function getOptimizedScreenAnchor(panel, baseRight, baseUp) {
+  panel.updateWorldMatrix(true, false);
+  const positionAttribute = panel.geometry.getAttribute("position");
+  const panelQuaternion = panel.getWorldQuaternion(new THREE.Quaternion());
+  const screenRight = baseRight.clone().applyQuaternion(panelQuaternion).normalize();
+  const screenUp = baseUp.clone().applyQuaternion(panelQuaternion).normalize();
   const panelNormal = new THREE.Vector3().crossVectors(screenRight, screenUp).normalize();
   const screenRotation = new THREE.Matrix4().makeBasis(screenRight, screenUp, panelNormal);
   const quaternion = new THREE.Quaternion().setFromRotationMatrix(screenRotation);
@@ -83,7 +110,7 @@ function getOptimizedMonitorAnchor(monitorPanel) {
 
   for (let index = 0; index < positionAttribute.count; index += 1) {
     worldVertex.fromBufferAttribute(positionAttribute, index);
-    monitorPanel.localToWorld(worldVertex);
+    panel.localToWorld(worldVertex);
     const right = worldVertex.dot(screenRight);
     const up = worldVertex.dot(screenUp);
     const depth = worldVertex.dot(panelNormal);
