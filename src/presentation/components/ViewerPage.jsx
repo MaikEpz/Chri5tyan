@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { AdaptiveDpr, Loader, PerformanceMonitor } from "@react-three/drei";
 import * as THREE from "three";
@@ -15,6 +15,35 @@ export function ViewerPage({ modelAsset, SceneComponent }) {
   const [monitorReady, setMonitorReady] = useState(false);
   const [monitorSnapshot, setMonitorSnapshot] = useState(null);
   const [activeMonitorView, setActiveMonitorView] = useState(0);
+  const [fullscreenSupported, setFullscreenSupported] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+
+    setFullscreenSupported(
+      Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen),
+    );
+    handleFullscreenChange();
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        return;
+      }
+
+      await document.documentElement.requestFullscreen({ navigationUI: "hide" });
+    } catch (error) {
+      console.warn("No se pudo cambiar el modo de pantalla completa.", error);
+    }
+  }, []);
   const finishMonitorClose = useCallback(() => {
     setMonitorClosing(false);
     setMonitorContentVisible(false);
@@ -102,13 +131,30 @@ export function ViewerPage({ modelAsset, SceneComponent }) {
         onEnterComplete={() => setMonitorContentVisible(true)}
         onExitComplete={finishMonitorClose}
       />
+      {fullscreenSupported && (
+        <button
+          className="fullscreen-toggle"
+          type="button"
+          aria-label={isFullscreen ? "Salir de pantalla completa" : "Abrir en pantalla completa"}
+          aria-pressed={isFullscreen}
+          onClick={toggleFullscreen}
+        >
+          <span aria-hidden="true">{isFullscreen ? "×" : "⛶"}</span>
+          {isFullscreen ? "Salir" : "Pantalla completa"}
+        </button>
+      )}
     </main>
   );
 }
 
 function getDevicePerformanceProfile() {
   const userAgent = navigator.userAgent;
-  const isIPhone = /iPhone/i.test(userAgent);
+  const platform = navigator.platform || "";
+  const maxTouchPoints = navigator.maxTouchPoints || 0;
+  const appleDeviceIdentity = `${userAgent} ${platform}`;
+  const isAppleMobile =
+    /iPhone|iPad|iPod/i.test(appleDeviceIdentity)
+    || (/Macintosh|MacIntel/i.test(appleDeviceIdentity) && maxTouchPoints > 1);
   const isAndroidPhone = /Android/i.test(userAgent) && /Mobile/i.test(userAgent);
   const screenLongEdge = Math.max(window.screen.width, window.screen.height);
   const pixelRatio = window.devicePixelRatio || 1;
@@ -117,8 +163,8 @@ function getDevicePerformanceProfile() {
 
   // iPhone 14-class screens start at 390 × 844 with DPR 3. Safari does not
   // expose the exact iPhone model, so capability signals are more reliable.
-  const modernIPhone =
-    isIPhone &&
+  const highEndAppleMobile =
+    isAppleMobile &&
     screenLongEdge >= 844 &&
     pixelRatio >= 3;
 
@@ -129,7 +175,7 @@ function getDevicePerformanceProfile() {
     cpuCores >= 8 &&
     deviceMemory >= 6;
 
-  const unrestrictedMobile = modernIPhone || highEndAndroid;
+  const unrestrictedMobile = highEndAppleMobile || highEndAndroid;
   const mobileLayout = window.matchMedia("(pointer: coarse), (max-width: 768px)").matches;
 
   return {

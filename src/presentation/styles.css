@@ -76,6 +76,48 @@ body {
   height: 2px;
 }
 
+.fullscreen-toggle {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 1200;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  color: #fff;
+  background: rgba(7, 8, 8, 0.72);
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(14px);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fullscreen-toggle span {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.fullscreen-toggle:hover {
+  border-color: rgba(255, 255, 255, 0.55);
+  background: rgba(7, 8, 8, 0.9);
+  transform: translateY(-1px);
+}
+
+.fullscreen-toggle:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
 .monitor-immersive-shell {
   position: fixed;
   left: 0;
@@ -419,6 +461,12 @@ body {
 }
 
 @media (max-width: 760px) {
+  .fullscreen-toggle {
+    right: max(0.75rem, env(safe-area-inset-right));
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    padding-inline: 0.85rem;
+  }
+
   .monitor-app-header {
     position: sticky;
     top: 0;
