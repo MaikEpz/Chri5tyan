@@ -4,12 +4,17 @@ import { useFrame } from "@react-three/fiber";
 const PARTICLE_COUNT = 32;
 
 export function AmbientDust() {
+  const pointsRef = useRef(null);
   const positionAttributeRef = useRef(null);
   const { positions, velocities } = useMemo(() => createDustParticles(), []);
 
-  useFrame((_, delta) => {
+  useFrame(({ camera, clock }, delta) => {
     const attribute = positionAttributeRef.current;
-    if (!attribute) return;
+    const points = pointsRef.current;
+    if (!attribute || !points) return;
+
+    points.position.copy(camera.position);
+    points.quaternion.copy(camera.quaternion);
 
     for (let index = 0; index < PARTICLE_COUNT; index += 1) {
       const offset = index * 3;
@@ -17,20 +22,29 @@ export function AmbientDust() {
       positions[offset + 1] += velocities[offset + 1] * delta;
       positions[offset + 2] += velocities[offset + 2] * delta;
 
-      if (positions[offset] > 12) positions[offset] = -14;
-      if (positions[offset + 1] > 11) positions[offset + 1] = 1;
-      if (positions[offset + 2] > 12) positions[offset + 2] = -16;
+      if (positions[offset + 2] > -1.5) {
+        const depth = 11 + (index % 4) * 0.35;
+        positions[offset + 2] = -depth;
+        positions[offset] = Math.sin(index * 12.91 + clock.elapsedTime) * depth * 0.68;
+        positions[offset + 1] = Math.cos(index * 8.37 + clock.elapsedTime) * depth * 0.34;
+      }
+
+      const depth = -positions[offset + 2];
+      const horizontalLimit = depth * 0.78;
+      const verticalLimit = depth * 0.42;
+      if (positions[offset] > horizontalLimit) positions[offset] = -horizontalLimit;
+      if (positions[offset + 1] > verticalLimit) positions[offset + 1] = -verticalLimit;
     }
 
     attribute.needsUpdate = true;
   });
 
   return (
-    <points frustumCulled={false}>
+    <points ref={pointsRef} frustumCulled={false}>
       <bufferGeometry>
         <bufferAttribute ref={positionAttributeRef} attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial color="#e6ecef" depthWrite={false} opacity={0.28} size={0.055} sizeAttenuation transparent />
+      <pointsMaterial color="#e6ecef" depthWrite={false} opacity={0.24} size={0.018} sizeAttenuation transparent />
     </points>
   );
 }
@@ -46,12 +60,13 @@ function createDustParticles() {
 
   for (let index = 0; index < PARTICLE_COUNT; index += 1) {
     const offset = index * 3;
-    positions[offset] = -14 + random() * 26;
-    positions[offset + 1] = 1 + random() * 10;
-    positions[offset + 2] = -16 + random() * 28;
-    velocities[offset] = 0.035 + random() * 0.045;
-    velocities[offset + 1] = 0.055 + random() * 0.065;
-    velocities[offset + 2] = 0.02 + random() * 0.03;
+    const depth = 2 + random() * 10;
+    positions[offset] = (random() - 0.5) * depth * 1.5;
+    positions[offset + 1] = (random() - 0.5) * depth * 0.8;
+    positions[offset + 2] = -depth;
+    velocities[offset] = 0.015 + random() * 0.025;
+    velocities[offset + 1] = 0.02 + random() * 0.035;
+    velocities[offset + 2] = 0.045 + random() * 0.055;
   }
 
   return { positions, velocities };

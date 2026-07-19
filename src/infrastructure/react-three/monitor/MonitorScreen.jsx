@@ -11,16 +11,19 @@ const SCREEN_TEXTURE_HEIGHT = 390;
 const SCREEN_TEXTURE_PIXEL_RATIO = 2;
 
 export function MonitorScreen({
+  activeView = 0,
   anchor,
+  isOpen = false,
   isFocused = false,
+  onActiveViewChange = () => {},
+  onClose = () => {},
   onFocusMonitor = () => {},
   onLogoOpen = () => {},
-  onReturnToNormal = () => {},
+  onScreenSnapshot = () => {},
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [activeView, setActiveView] = useState(0);
   const [hoveredButton, setHoveredButton] = useState(null);
   const screenMaterialRef = useRef(null);
+  const snapshotCapturedRef = useRef(null);
   const view = SCREEN_VIEWS[activeView];
   const texture = useMonitorPageTexture(view, activeView, isOpen, isFocused);
   const { gl } = useThree();
@@ -38,6 +41,17 @@ export function MonitorScreen({
       gl.domElement.style.cursor = "crosshair";
     };
   }, [gl.domElement, hoveredButton]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      snapshotCapturedRef.current = null;
+      return;
+    }
+    if (!isFocused || snapshotCapturedRef.current === activeView) return;
+
+    snapshotCapturedRef.current = activeView;
+    onScreenSnapshot(texture.image.toDataURL("image/png"));
+  }, [activeView, isFocused, isOpen, onScreenSnapshot, texture]);
 
   if (!anchor) return null;
 
@@ -101,9 +115,7 @@ export function MonitorScreen({
                   onFocusMonitor();
                   return;
                 }
-                setIsOpen(false);
-                setActiveView(0);
-                onReturnToNormal();
+                onClose();
               }}
               onPointerOut={() => setHoveredButton(null)}
               onPointerOver={() => setHoveredButton("view-toggle")}
@@ -114,7 +126,7 @@ export function MonitorScreen({
                 position={[buttonStartX + index * buttonGap, buttonY, 0.12]}
                 size={[buttonWidth, buttonHeight]}
                 onClick={() => {
-                  setActiveView(index);
+                  onActiveViewChange(index);
                   if (!isFocused) onFocusMonitor();
                 }}
                 onPointerOut={() => setHoveredButton(null)}
@@ -127,7 +139,7 @@ export function MonitorScreen({
             position={[0, 0, 0.12]}
             size={[logoHitWidth, logoHitHeight]}
             onClick={() => {
-              setIsOpen(true);
+              onScreenSnapshot(createMonitorPageSnapshot(view, activeView, true));
               onLogoOpen();
             }}
             onPointerOut={() => setHoveredButton(null)}
@@ -141,6 +153,7 @@ export function MonitorScreen({
 }
 
 function MonitorVectorLogo({ normalDirection, screenWidth }) {
+  const materialRefs = useRef([]);
   const logoScale = (screenWidth * 0.6) / 1368;
   const svg = useLoader(SVGLoader, chrisLogoWhiteUrl);
   const geometries = useMemo(
@@ -155,6 +168,16 @@ function MonitorVectorLogo({ normalDirection, screenWidth }) {
     [geometries],
   );
 
+  useFrame(({ clock }) => {
+    const time = clock.getElapsedTime();
+    const brightness = THREE.MathUtils.clamp(
+      0.95 + Math.sin(time * 0.82) * 0.032 + Math.sin(time * 2.1 + 0.8) * 0.018,
+      0.9,
+      1,
+    );
+    materialRefs.current.forEach((material) => material?.color.setScalar(brightness));
+  });
+
   return (
     <group position={[0, 0, 0.004 * normalDirection]} renderOrder={31}>
       <Center precise>
@@ -162,8 +185,11 @@ function MonitorVectorLogo({ normalDirection, screenWidth }) {
           {geometries.map((geometry, index) => (
             <mesh key={index} geometry={geometry} renderOrder={31}>
               <meshBasicMaterial
+                ref={(material) => {
+                  materialRefs.current[index] = material;
+                }}
                 color="#ffffff"
-                depthTest
+                depthTest={false}
                 depthWrite={false}
                 side={THREE.DoubleSide}
                 toneMapped={false}
@@ -204,91 +230,98 @@ function useMonitorPageTexture(view, activeView, isOpen, isFocused) {
       return;
     }
 
-    context.fillStyle = "#090909";
-    context.fillRect(0, 0, width, height);
-
-    const background = context.createLinearGradient(0, 0, width, height);
-    background.addColorStop(0, "#202020");
-    background.addColorStop(1, "#050505");
-    context.fillStyle = background;
-    context.fillRect(0, 0, width, height);
-
-    context.strokeStyle = "rgba(255,255,255,0.28)";
-    context.lineWidth = 3;
-    context.strokeRect(10, 10, width - 20, height - 20);
-
-    drawRoundedRect(context, 36, 34, 126, 48, 12, "rgba(255,255,255,0.07)");
-    context.strokeStyle = "rgba(255,255,255,0.2)";
-    context.lineWidth = 2;
-    strokeRoundedRect(context, 36, 34, 126, 48, 12);
-    context.fillStyle = "#ffffff";
-    context.font = "800 22px Inter, Arial, sans-serif";
-    context.fillText(isFocused ? "Volver" : "Abrir", isFocused ? 58 : 64, 65);
-
-    context.fillStyle = "#ffffff";
-    context.font = "800 34px Inter, Arial, sans-serif";
-    context.fillText("Chris", 190, 66);
-
-    SCREEN_VIEWS.forEach((screenView, index) => {
-      const x = 520 + index * 150;
-      const y = 34;
-      const active = index === activeView;
-      drawRoundedRect(context, x, y, 126, 48, 12, active ? screenView.accent : "rgba(255,255,255,0.07)");
-      context.strokeStyle = active ? screenView.accent : "rgba(255,255,255,0.2)";
-      context.lineWidth = 2;
-      strokeRoundedRect(context, x, y, 126, 48, 12);
-      context.fillStyle = active ? "#050505" : "#ffffff";
-      context.font = "800 22px Inter, Arial, sans-serif";
-      context.fillText(screenView.label, x + 20, y + 31);
-    });
-
-    context.fillStyle = view.accent;
-    context.font = "900 20px Inter, Arial, sans-serif";
-    context.fillText(view.eyebrow.toUpperCase(), 42, 134);
-
-    context.fillStyle = "#ffffff";
-    context.font = "900 58px Inter, Arial, sans-serif";
-    context.fillText(view.title, 42, 198);
-
-    context.fillStyle = "#bcbcbc";
-    context.font = "500 26px Inter, Arial, sans-serif";
-    context.fillText(view.copy, 44, 246);
-
-    drawRoundedRect(context, 762, 128, 210, 150, 18, "rgba(255,255,255,0.07)");
-    context.strokeStyle = "rgba(255,255,255,0.18)";
-    context.lineWidth = 2;
-    strokeRoundedRect(context, 762, 128, 210, 150, 18);
-    context.fillStyle = view.accent;
-    context.font = "900 58px Inter, Arial, sans-serif";
-    context.fillText(view.stat, 792, 218);
-    context.fillStyle = "#ffffff";
-    context.font = "800 22px Inter, Arial, sans-serif";
-    context.fillText(view.label, 794, 252);
-
-    drawRoundedRect(context, 42, 318, 150, 16, 8, view.accent);
-    drawRoundedRect(context, 216, 318, 432, 16, 8, "rgba(255,255,255,0.26)");
-    drawRoundedRect(context, 680, 318, 250, 16, 8, "rgba(255,255,255,0.26)");
-
+    drawMonitorPage(context, width, height, view, activeView, isFocused);
     texture.needsUpdate = true;
   }, [activeView, isFocused, isOpen, texture, view]);
 
   return texture;
 }
 
-function drawLogoScreen(context, width, height) {
-  context.fillStyle = "#080808";
+function createMonitorPageSnapshot(view, activeView, isFocused) {
+  const canvas = document.createElement("canvas");
+  canvas.width = SCREEN_TEXTURE_WIDTH * SCREEN_TEXTURE_PIXEL_RATIO;
+  canvas.height = SCREEN_TEXTURE_HEIGHT * SCREEN_TEXTURE_PIXEL_RATIO;
+  const context = canvas.getContext("2d");
+  context.setTransform(SCREEN_TEXTURE_PIXEL_RATIO, 0, 0, SCREEN_TEXTURE_PIXEL_RATIO, 0, 0);
+  drawMonitorPage(
+    context,
+    SCREEN_TEXTURE_WIDTH,
+    SCREEN_TEXTURE_HEIGHT,
+    view,
+    activeView,
+    isFocused,
+  );
+  return canvas.toDataURL("image/png");
+}
+
+function drawMonitorPage(context, width, height, view, activeView, isFocused) {
+  context.fillStyle = "#000000";
   context.fillRect(0, 0, width, height);
 
-  const background = context.createRadialGradient(width * 0.5, height * 0.45, 12, width * 0.5, height * 0.45, 430);
-  background.addColorStop(0, "#242424");
-  background.addColorStop(0.52, "#111111");
-  background.addColorStop(1, "#030303");
-  context.fillStyle = background;
-  context.fillRect(0, 0, width, height);
-
+  drawRoundedRect(context, 36, 34, 126, 48, 12, "rgba(255,255,255,0.07)");
   context.strokeStyle = "rgba(255,255,255,0.2)";
-  context.lineWidth = 3;
-  context.strokeRect(12, 12, width - 24, height - 24);
+  context.lineWidth = 2;
+  strokeRoundedRect(context, 36, 34, 126, 48, 12);
+  context.fillStyle = "#ffffff";
+  context.font = "800 22px Inter, Arial, sans-serif";
+  context.fillText(isFocused ? "Volver" : "Abrir", isFocused ? 58 : 64, 65);
+
+  context.fillStyle = "#ffffff";
+  context.font = "800 34px Inter, Arial, sans-serif";
+  context.fillText("Chris", 190, 66);
+
+  SCREEN_VIEWS.forEach((screenView, index) => {
+    const x = 520 + index * 150;
+    const y = 34;
+    const active = index === activeView;
+    drawRoundedRect(
+      context,
+      x,
+      y,
+      126,
+      48,
+      12,
+      active ? screenView.accent : "rgba(255,255,255,0.07)",
+    );
+    context.strokeStyle = active ? screenView.accent : "rgba(255,255,255,0.2)";
+    context.lineWidth = 2;
+    strokeRoundedRect(context, x, y, 126, 48, 12);
+    context.fillStyle = active ? "#050505" : "#ffffff";
+    context.font = "800 22px Inter, Arial, sans-serif";
+    context.fillText(screenView.label, x + 20, y + 31);
+  });
+
+  context.fillStyle = view.accent;
+  context.font = "900 20px Inter, Arial, sans-serif";
+  context.fillText(view.eyebrow.toUpperCase(), 42, 134);
+
+  context.fillStyle = "#ffffff";
+  context.font = "900 58px Inter, Arial, sans-serif";
+  context.fillText(view.title, 42, 198);
+
+  context.fillStyle = "#bcbcbc";
+  context.font = "500 26px Inter, Arial, sans-serif";
+  context.fillText(view.copy, 44, 246);
+
+  drawRoundedRect(context, 762, 128, 210, 150, 18, "rgba(255,255,255,0.07)");
+  context.strokeStyle = "rgba(255,255,255,0.18)";
+  context.lineWidth = 2;
+  strokeRoundedRect(context, 762, 128, 210, 150, 18);
+  context.fillStyle = view.accent;
+  context.font = "900 58px Inter, Arial, sans-serif";
+  context.fillText(view.stat, 792, 218);
+  context.fillStyle = "#ffffff";
+  context.font = "800 22px Inter, Arial, sans-serif";
+  context.fillText(view.label, 794, 252);
+
+  drawRoundedRect(context, 42, 318, 150, 16, 8, view.accent);
+  drawRoundedRect(context, 216, 318, 432, 16, 8, "rgba(255,255,255,0.26)");
+  drawRoundedRect(context, 680, 318, 250, 16, 8, "rgba(255,255,255,0.26)");
+}
+
+function drawLogoScreen(context, width, height) {
+  context.fillStyle = "#000000";
+  context.fillRect(0, 0, width, height);
 
 }
 
