@@ -75,3 +75,414 @@ body {
   width: 14px;
   height: 2px;
 }
+
+.monitor-immersive-shell {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  isolation: isolate;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  background: #000;
+  pointer-events: auto;
+  animation: monitor-immersive-enter 0.9s cubic-bezier(0.76, 0, 0.24, 1) both;
+}
+
+.monitor-immersive-shell.is-closing {
+  pointer-events: none;
+  animation-name: monitor-immersive-exit;
+}
+
+.monitor-immersive-shell.is-logo-returning {
+  pointer-events: none;
+}
+
+.monitor-app {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden auto;
+  color: #fff;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.07), transparent 28rem),
+    #000;
+  opacity: 0;
+  transform: scale(1.018) translateY(10px);
+  transform-origin: center;
+  pointer-events: none;
+  scrollbar-width: none;
+}
+
+.monitor-app::-webkit-scrollbar {
+  display: none;
+}
+
+.monitor-app.is-visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: auto;
+  transition:
+    opacity 0.75s ease 0.08s,
+    transform 0.95s cubic-bezier(0.2, 0.8, 0.2, 1) 0.04s;
+}
+
+.monitor-app.is-leaving {
+  opacity: 0;
+  transform: scale(0.992);
+  transition:
+    opacity 0.36s ease,
+    transform 0.5s ease;
+}
+
+.monitor-app-header {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) auto minmax(8rem, 1fr);
+  align-items: center;
+  gap: clamp(1rem, 3vw, 3rem);
+  width: 100%;
+  padding: clamp(1.25rem, 3.3vw, 2.75rem) clamp(1.25rem, 4.5vw, 5rem);
+}
+
+.monitor-back-button,
+.monitor-navigation-button {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.8rem;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    border-color 0.25s ease,
+    color 0.25s ease,
+    background-color 0.25s ease,
+    transform 0.25s ease;
+}
+
+.monitor-back-button {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 3rem;
+  padding: 0.7rem 1.1rem;
+}
+
+.monitor-back-button:hover,
+.monitor-navigation-button:hover {
+  border-color: rgba(255, 255, 255, 0.48);
+  background: rgba(255, 255, 255, 0.11);
+  transform: translateY(-1px);
+}
+
+.monitor-back-button:focus-visible,
+.monitor-navigation-button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.monitor-app-brand {
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  letter-spacing: -0.04em;
+}
+
+.monitor-app-navigation {
+  justify-self: end;
+  display: flex;
+  gap: 0.65rem;
+}
+
+.monitor-navigation-button {
+  min-height: 3rem;
+  padding: 0.7rem clamp(0.8rem, 1.6vw, 1.25rem);
+}
+
+.monitor-navigation-button[aria-pressed="true"] {
+  border-color: var(--monitor-accent);
+  color: #050505;
+  background: var(--monitor-accent);
+}
+
+.monitor-app-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: clamp(2rem, 4vw, 4.5rem);
+  width: min(100%, 96rem);
+  margin: 0 auto;
+  padding: clamp(2rem, 5vh, 5rem) clamp(1.25rem, 6vw, 6rem) clamp(2rem, 7vh, 5rem);
+  animation: monitor-view-enter 0.5s ease both;
+}
+
+.monitor-app-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(15rem, 0.65fr);
+  align-items: end;
+  gap: clamp(2rem, 6vw, 7rem);
+}
+
+.monitor-app-copy {
+  min-width: 0;
+}
+
+.monitor-app-eyebrow,
+.monitor-card-label {
+  margin: 0 0 0.9rem;
+  color: var(--monitor-accent);
+  font-size: clamp(0.72rem, 1.2vw, 0.9rem);
+  font-weight: 850;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.monitor-app-copy h1 {
+  max-width: 12ch;
+  margin: 0;
+  font-size: clamp(3rem, 8vw, 8.5rem);
+  line-height: 0.87;
+  letter-spacing: -0.075em;
+}
+
+.monitor-app-description {
+  max-width: 42rem;
+  margin: clamp(1.25rem, 2.5vw, 2rem) 0 0;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: clamp(1rem, 1.8vw, 1.35rem);
+  line-height: 1.55;
+}
+
+.monitor-stat-card,
+.monitor-content-card {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: clamp(1rem, 2vw, 1.5rem);
+  background: rgba(255, 255, 255, 0.055);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.monitor-stat-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 13rem;
+  padding: clamp(1.4rem, 3vw, 2.25rem);
+}
+
+.monitor-stat-card span,
+.monitor-stat-card small {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.monitor-stat-card strong {
+  margin: auto 0 0.35rem;
+  color: var(--monitor-accent);
+  font-size: clamp(3.25rem, 6vw, 6.5rem);
+  line-height: 0.85;
+  letter-spacing: -0.06em;
+}
+
+.monitor-content-grid {
+  display: grid;
+  grid-template-columns: 1.45fr 0.8fr 0.8fr;
+  gap: clamp(0.9rem, 1.8vw, 1.5rem);
+  margin-top: auto;
+}
+
+.monitor-content-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 11rem;
+  padding: clamp(1.2rem, 2.5vw, 2rem);
+}
+
+.monitor-content-card.is-wide {
+  flex-direction: row;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.monitor-content-card h2,
+.monitor-content-card strong {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.4vw, 2.2rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.monitor-content-card p {
+  max-width: 34rem;
+  margin: auto 0 0;
+  color: rgba(255, 255, 255, 0.56);
+  line-height: 1.5;
+}
+
+.monitor-logo-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  background: #000;
+  pointer-events: none;
+}
+
+.monitor-logo-layer img {
+  width: 60%;
+  height: auto;
+  transform: translate(0.83%, 23.22%);
+}
+
+.monitor-logo-layer.is-hiding {
+  animation: monitor-logo-exit 0.55s ease both;
+}
+
+.monitor-logo-layer.is-showing {
+  animation: monitor-logo-return 0.55s ease both;
+}
+
+@keyframes monitor-immersive-enter {
+  0%,
+  12% {
+    border-radius: 18px;
+    left: var(--monitor-origin-left);
+    top: var(--monitor-origin-top);
+    width: var(--monitor-origin-width);
+    height: var(--monitor-origin-height);
+  }
+
+  100% {
+    border-radius: 0;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100dvh;
+  }
+}
+
+@keyframes monitor-immersive-exit {
+  0% {
+    border-radius: 0;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100dvh;
+  }
+
+  88%,
+  100% {
+    border-radius: 18px;
+    left: var(--monitor-origin-left);
+    top: var(--monitor-origin-top);
+    width: var(--monitor-origin-width);
+    height: var(--monitor-origin-height);
+  }
+}
+
+@keyframes monitor-logo-exit {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes monitor-logo-return {
+  from {
+    opacity: 0;
+    visibility: visible;
+  }
+
+  to {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+@keyframes monitor-view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .monitor-app-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    grid-template-columns: 1fr auto;
+    gap: 0.9rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.88);
+    backdrop-filter: blur(18px);
+  }
+
+  .monitor-app-brand {
+    justify-self: end;
+  }
+
+  .monitor-app-navigation {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .monitor-navigation-button {
+    min-width: 0;
+    padding-inline: 0.5rem;
+  }
+
+  .monitor-app-content {
+    gap: 2.5rem;
+    padding: 2.25rem 1rem 2rem;
+  }
+
+  .monitor-app-hero {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .monitor-app-copy h1 {
+    font-size: clamp(3.5rem, 18vw, 6rem);
+  }
+
+  .monitor-stat-card {
+    min-height: 10.5rem;
+  }
+
+  .monitor-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .monitor-content-card.is-wide {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .monitor-immersive-shell {
+    animation-duration: 0.01ms;
+  }
+
+  .monitor-app,
+  .monitor-app-content,
+  .monitor-logo-layer {
+    animation-duration: 0.01ms;
+    transition-duration: 0.01ms;
+  }
+}

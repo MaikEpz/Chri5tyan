@@ -1,17 +1,20 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { SCROLL_LOOK, SCREEN_CONTENT_OFFSET_X } from "../sceneConfig.js";
 
-const MONITOR_FOCUS_PADDING = 1.04;
+const MONITOR_FOCUS_PADDING = 1.1578947368421053;
 const MONITOR_FOCUS_DURATION = 1.5;
 const MONITOR_FOCUS_ARC_HEIGHT = 0.22;
+const MONITOR_OVERLAY_INSET = 0.017425;
+const MONITOR_OVERLAY_OFFSET_X = 0;
 
 export function ScrollLookControls({
   cameraPosition,
   cameraTarget,
   enabled,
   focusAnchor = null,
+  onFocusComplete = () => {},
   resetKey = 0,
 }) {
   const { camera, gl } = useThree();
@@ -32,6 +35,7 @@ export function ScrollLookControls({
   const transitionStartPosition = useRef(new THREE.Vector3());
   const transitionStartQuaternion = useRef(new THREE.Quaternion());
   const transitionProgress = useRef(0);
+  const focusCompleteNotified = useRef(false);
   const wasFocused = useRef(false);
   const returnStartPosition = useRef(new THREE.Vector3());
   const returnStartQuaternion = useRef(new THREE.Quaternion());
@@ -57,7 +61,7 @@ export function ScrollLookControls({
     initialized.current = true;
   }, [camera, cameraPosition, cameraTarget, enabled]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (resetKey === lastResetKey.current) return;
     lastResetKey.current = resetKey;
     if (!enabled || !initialized.current) return;
@@ -157,6 +161,7 @@ export function ScrollLookControls({
 
       if (!wasFocused.current) {
         wasFocused.current = true;
+        focusCompleteNotified.current = false;
         transitionProgress.current = 0;
         transitionStartPosition.current.copy(camera.position);
         transitionStartQuaternion.current.copy(camera.quaternion);
@@ -182,6 +187,10 @@ export function ScrollLookControls({
         focusTargetQuaternion.current,
         easedProgress,
       );
+      if (transitionProgress.current >= 1 && !focusCompleteNotified.current) {
+        focusCompleteNotified.current = true;
+        onFocusComplete(getProjectedScreenBounds(focusAnchor, camera, gl.domElement));
+      }
       return;
     }
 
@@ -216,6 +225,7 @@ export function ScrollLookControls({
     }
 
     wasFocused.current = false;
+    focusCompleteNotified.current = false;
 
     yaw.current = THREE.MathUtils.damp(yaw.current, targetYaw.current, SCROLL_LOOK.smoothing, delta);
     pitch.current = THREE.MathUtils.damp(
@@ -243,4 +253,44 @@ function easeInOutCubic(value) {
   return value < 0.5
     ? 4 * value * value * value
     : 1 - Math.pow(-2 * value + 2, 3) / 2;
+}
+
+function getProjectedScreenBounds(anchor, camera, canvas) {
+  const center = new THREE.Vector3().fromArray(anchor.position);
+  const rotation = new THREE.Quaternion().fromArray(anchor.quaternion);
+  const contentOffset = new THREE.Vector3(SCREEN_CONTENT_OFFSET_X, 0, 0).applyQuaternion(rotation);
+  center.add(contentOffset);
+
+  const corners = [
+    [-anchor.width / 2, anchor.height / 2, 0],
+    [anchor.width / 2, anchor.height / 2, 0],
+    [anchor.width / 2, -anchor.height / 2, 0],
+    [-anchor.width / 2, -anchor.height / 2, 0],
+  ].map(([x, y, z]) => (
+    new THREE.Vector3(x, y, z)
+      .applyQuaternion(rotation)
+      .add(center)
+      .project(camera)
+  ));
+
+  const canvasBounds = canvas.getBoundingClientRect();
+  const screenPoints = corners.map((corner) => ({
+    x: canvasBounds.left + ((corner.x + 1) / 2) * canvasBounds.width,
+    y: canvasBounds.top + ((1 - corner.y) / 2) * canvasBounds.height,
+  }));
+  const left = Math.min(...screenPoints.map((point) => point.x));
+  const right = Math.max(...screenPoints.map((point) => point.x));
+  const top = Math.min(...screenPoints.map((point) => point.y));
+  const bottom = Math.max(...screenPoints.map((point) => point.y));
+  const width = right - left;
+  const height = bottom - top;
+  const horizontalInset = width * MONITOR_OVERLAY_INSET;
+  const verticalInset = height * MONITOR_OVERLAY_INSET;
+
+  return {
+    height: height - verticalInset * 2,
+    left: left + horizontalInset + width * MONITOR_OVERLAY_OFFSET_X,
+    top: top + verticalInset,
+    width: width - horizontalInset * 2,
+  };
 }
