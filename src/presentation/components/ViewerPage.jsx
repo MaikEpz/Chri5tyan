@@ -7,10 +7,10 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
   const fullscreen = useFullscreenMode();
   const mobileLandscape = useMobileLandscape();
   const monitor = useMonitorExperience();
-  const shouldRequestLandscape = mobileLandscape.requiresLandscape && !monitor.open;
+  const shouldRequestLandscape = mobileLandscape.requiresLandscape && !monitor.isOpen;
 
   return (
-    <main className={`viewer-shell${monitor.open ? " is-monitor-open" : ""}`}>
+    <main className={`viewer-shell${monitor.isOpen ? " is-monitor-open" : ""}`}>
       <div
         className="viewer-world"
         aria-hidden={shouldRequestLandscape || undefined}
@@ -29,7 +29,7 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
       </div>
       <FullscreenMonitor
         isClosing={monitor.closing}
-        isVisible={monitor.open && monitor.ready}
+        isVisible={monitor.isOpen && monitor.ready}
         origin={monitor.origin}
         source={monitor.source}
         onClose={monitor.requestClose}
