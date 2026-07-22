@@ -14,10 +14,14 @@ export function useMonitorExperience() {
   const [state, setState] = useState(INITIAL_MONITOR_STATE);
   const [cameraResetKey, setCameraResetKey] = useState(0);
 
-  const finishClose = useCallback(() => {
-    setState(INITIAL_MONITOR_STATE);
+  const resetCamera = useCallback(() => {
     setCameraResetKey((current) => current + 1);
   }, []);
+
+  const finishClose = useCallback(() => {
+    setState(INITIAL_MONITOR_STATE);
+    resetCamera();
+  }, [resetCamera]);
 
   const requestClose = useCallback(() => {
     if (!state.ready) {
@@ -56,6 +60,7 @@ export function useMonitorExperience() {
     finishClose,
     markReady,
     open,
+    resetCamera,
     requestClose,
     setActiveView,
     showContent,

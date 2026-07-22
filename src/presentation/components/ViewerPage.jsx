@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { useFullscreenMode } from "../hooks/useFullscreenMode.js";
 import { useMobileLandscape } from "../hooks/useMobileLandscape.js";
 import { useMonitorExperience } from "../hooks/useMonitorExperience.js";
@@ -7,14 +8,31 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
   const fullscreen = useFullscreenMode();
   const mobileLandscape = useMobileLandscape();
   const monitor = useMonitorExperience();
+  const [orientationSettling, setOrientationSettling] = useState(false);
+  const previousPortraitRef = useRef(mobileLandscape.isPortrait);
   const shouldRequestLandscape = mobileLandscape.requiresLandscape && !monitor.isOpen;
 
+  useEffect(() => {
+    const changedToLandscape = previousPortraitRef.current && !mobileLandscape.isPortrait;
+    previousPortraitRef.current = mobileLandscape.isPortrait;
+
+    if (!mobileLandscape.isPhone || !changedToLandscape || monitor.isOpen) return undefined;
+
+    setOrientationSettling(true);
+    monitor.resetCamera();
+    const settleTimeout = window.setTimeout(() => setOrientationSettling(false), 650);
+
+    return () => window.clearTimeout(settleTimeout);
+  }, [mobileLandscape.isPhone, mobileLandscape.isPortrait, monitor.isOpen, monitor.resetCamera]);
+
+  const worldInteractionBlocked = shouldRequestLandscape || orientationSettling;
+
   return (
-    <main className={`viewer-shell${monitor.isOpen ? " is-monitor-open" : ""}`}>
+    <main className={`viewer-shell${monitor.isOpen ? " is-monitor-open" : ""}${orientationSettling ? " is-orientation-settling" : ""}`}>
       <div
         className="viewer-world"
         aria-hidden={shouldRequestLandscape || undefined}
-        inert={shouldRequestLandscape || undefined}
+        inert={worldInteractionBlocked || undefined}
       >
         <ViewportComponent
           modelAsset={modelAsset}
@@ -37,7 +55,7 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
         onExitComplete={monitor.finishClose}
       />
       <LandscapeOrientationNotice />
-      {fullscreen.isSupported && !shouldRequestLandscape && (
+      {fullscreen.isSupported && !worldInteractionBlocked && (
         <FullscreenButton
           isFullscreen={fullscreen.isFullscreen}
           onToggle={fullscreen.toggle}
