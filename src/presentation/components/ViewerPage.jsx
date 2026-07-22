@@ -1,76 +1,39 @@
 import { useFullscreenMode } from "../hooks/useFullscreenMode.js";
-import { useMobileLandscape } from "../hooks/useMobileLandscape.js";
 import { useMonitorExperience } from "../hooks/useMonitorExperience.js";
 import { FullscreenMonitor } from "./monitor/FullscreenMonitor.jsx";
 
 export function ViewerPage({ modelAsset, ViewportComponent }) {
   const fullscreen = useFullscreenMode();
-  const mobileLandscape = useMobileLandscape();
   const monitor = useMonitorExperience();
-  const shouldRequestLandscape = mobileLandscape.requiresLandscape && !monitor.isOpen;
-  const landscapeStyle = mobileLandscape.isPhone
-    ? {
-        "--mobile-landscape-height": `${mobileLandscape.landscapeViewport.height}px`,
-        "--mobile-landscape-scale": mobileLandscape.landscapeViewport.scale,
-        "--mobile-landscape-width": `${mobileLandscape.landscapeViewport.width}px`,
-      }
-    : undefined;
 
   return (
-    <main className={`viewer-shell${mobileLandscape.isPhone ? " is-phone" : ""}${monitor.isOpen ? " is-monitor-open" : ""}`}>
-      <div className="viewer-world-frame">
-        <div
-          className="viewer-world"
-          aria-hidden={shouldRequestLandscape || undefined}
-          inert={shouldRequestLandscape || undefined}
-          style={landscapeStyle}
-        >
-          <ViewportComponent
-            modelAsset={modelAsset}
-            activeMonitorView={monitor.activeView}
-            cameraResetKey={monitor.cameraResetKey}
-            monitorContentVisible={monitor.contentVisible}
-            onActiveMonitorViewChange={monitor.setActiveView}
-            onMonitorClose={monitor.requestClose}
-            onMonitorOpen={monitor.open}
-            onMonitorReady={monitor.markReady}
-          />
-        </div>
-      </div>
+    <main className="viewer-shell">
+      <ViewportComponent
+        modelAsset={modelAsset}
+        activeMonitorView={monitor.activeView}
+        cameraResetKey={monitor.cameraResetKey}
+        monitorContentVisible={monitor.contentVisible}
+        onActiveMonitorViewChange={monitor.setActiveView}
+        onMonitorClose={monitor.requestClose}
+        onMonitorOpen={monitor.open}
+        onMonitorReady={monitor.markReady}
+      />
       <FullscreenMonitor
         isClosing={monitor.closing}
-        isVisible={monitor.isOpen && monitor.ready}
+        isVisible={monitor.open && monitor.ready}
         origin={monitor.origin}
         source={monitor.source}
         onClose={monitor.requestClose}
         onEnterComplete={monitor.showContent}
         onExitComplete={monitor.finishClose}
       />
-      <LandscapeOrientationNotice />
-      {fullscreen.isSupported && !shouldRequestLandscape && (
+      {fullscreen.isSupported && (
         <FullscreenButton
           isFullscreen={fullscreen.isFullscreen}
           onToggle={fullscreen.toggle}
         />
       )}
     </main>
-  );
-}
-
-function LandscapeOrientationNotice() {
-  return (
-    <section
-      className="landscape-orientation-notice"
-      role="dialog"
-      aria-label="Orientación horizontal requerida"
-      aria-live="polite"
-    >
-      <div className="landscape-orientation-icon" aria-hidden="true">
-        <span />
-      </div>
-      <p>Gira tu celular para continuar</p>
-      <small>El mundo 3D está diseñado para verse en horizontal.</small>
-    </section>
   );
 }
 

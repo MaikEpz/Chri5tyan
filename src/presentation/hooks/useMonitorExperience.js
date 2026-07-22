@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 
 const INITIAL_MONITOR_STATE = Object.freeze({
-  isOpen: false,
+  open: false,
   closing: false,
   contentVisible: false,
   origin: null,
@@ -33,7 +33,7 @@ export function useMonitorExperience() {
   const open = useCallback((source = "desktop") => {
     setState({
       ...INITIAL_MONITOR_STATE,
-      isOpen: true,
+      open: true,
       source,
     });
   }, []);

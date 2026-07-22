@@ -108,23 +108,22 @@ export function ScrollLookControls({
     };
 
     const handlePointerMove = (event) => {
-      if (event.pointerType && event.pointerType !== "mouse") return;
       applyPointerPosition(event.clientX, event.clientY);
     };
 
-    const resetPointerPosition = () => {
+    const handlePointerLeave = () => {
       targetYaw.current = initialYaw.current;
       targetPitch.current = initialPitch.current;
     };
 
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
-    document.documentElement.addEventListener("pointerleave", resetPointerPosition);
-    window.addEventListener("blur", resetPointerPosition);
+    document.documentElement.addEventListener("pointerleave", handlePointerLeave);
+    window.addEventListener("blur", handlePointerLeave);
 
     return () => {
       window.removeEventListener("pointermove", handlePointerMove);
-      document.documentElement.removeEventListener("pointerleave", resetPointerPosition);
-      window.removeEventListener("blur", resetPointerPosition);
+      document.documentElement.removeEventListener("pointerleave", handlePointerLeave);
+      window.removeEventListener("blur", handlePointerLeave);
     };
   }, [enabled, gl.domElement]);
 
