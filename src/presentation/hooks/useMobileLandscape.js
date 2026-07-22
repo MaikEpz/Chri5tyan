@@ -40,7 +40,7 @@ export function getLandscapeViewport(browser = window) {
 
   return {
     height,
-    scale: Math.min(viewportWidth / width, viewportHeight / height, 1),
+    scale: Math.min(viewportWidth / width, viewportHeight / height),
     width,
   };
 }

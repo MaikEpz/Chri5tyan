@@ -32,18 +32,23 @@ body {
     #f4f1ea;
 }
 
+.viewer-world-frame,
 .viewer-world {
   width: 100%;
   height: 100%;
 }
 
+.viewer-world-frame {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #050607;
+}
+
 .viewer-shell.is-phone .viewer-world {
-  position: absolute;
-  left: 50%;
-  top: 50%;
   width: var(--mobile-landscape-width);
   height: var(--mobile-landscape-height);
-  transform: translate(-50%, -50%) scale(var(--mobile-landscape-scale));
+  transform: scale(var(--mobile-landscape-scale));
   transform-origin: center;
 }
 

@@ -84,3 +84,14 @@ test("mantiene el mismo lienzo horizontal al girar el teléfono", () => {
     width: 740,
   });
 });
+
+test("permite ampliar el lienzo sin cambiar su proporción interna", () => {
+  const browser = createBrowser({ height: 480, portrait: false, width: 980 });
+  browser.screen = { height: 360, width: 740 };
+
+  assert.deepEqual(getLandscapeViewport(browser), {
+    height: 360,
+    scale: 1.3243243243243243,
+    width: 740,
+  });
+});

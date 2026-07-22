@@ -18,22 +18,24 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
 
   return (
     <main className={`viewer-shell${mobileLandscape.isPhone ? " is-phone" : ""}${monitor.isOpen ? " is-monitor-open" : ""}`}>
-      <div
-        className="viewer-world"
-        aria-hidden={shouldRequestLandscape || undefined}
-        inert={shouldRequestLandscape || undefined}
-        style={landscapeStyle}
-      >
-        <ViewportComponent
-          modelAsset={modelAsset}
-          activeMonitorView={monitor.activeView}
-          cameraResetKey={monitor.cameraResetKey}
-          monitorContentVisible={monitor.contentVisible}
-          onActiveMonitorViewChange={monitor.setActiveView}
-          onMonitorClose={monitor.requestClose}
-          onMonitorOpen={monitor.open}
-          onMonitorReady={monitor.markReady}
-        />
+      <div className="viewer-world-frame">
+        <div
+          className="viewer-world"
+          aria-hidden={shouldRequestLandscape || undefined}
+          inert={shouldRequestLandscape || undefined}
+          style={landscapeStyle}
+        >
+          <ViewportComponent
+            modelAsset={modelAsset}
+            activeMonitorView={monitor.activeView}
+            cameraResetKey={monitor.cameraResetKey}
+            monitorContentVisible={monitor.contentVisible}
+            onActiveMonitorViewChange={monitor.setActiveView}
+            onMonitorClose={monitor.requestClose}
+            onMonitorOpen={monitor.open}
+            onMonitorReady={monitor.markReady}
+          />
+        </div>
       </div>
       <FullscreenMonitor
         isClosing={monitor.closing}
