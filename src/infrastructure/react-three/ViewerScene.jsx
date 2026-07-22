@@ -12,6 +12,7 @@ const PHONE_SCREEN = "phone";
 export function ViewerScene({
   activeMonitorView = 0,
   cameraResetKey = 0,
+  lowPowerMode = false,
   modelAsset,
   monitorContentVisible = false,
   onActiveMonitorViewChange = () => {},
@@ -84,8 +85,9 @@ export function ViewerScene({
   return (
     <>
       <SceneLighting useFallback={!hasModelLights} />
-      <AmbientDust />
+      {!lowPowerMode && <AmbientDust />}
       <LoadedModel
+        lowPowerMode={lowPowerMode}
         source={modelAsset.source}
         onReady={handleModelReady}
         onScreenAnchor={setScreenAnchor}
