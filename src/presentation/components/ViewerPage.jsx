@@ -10,7 +10,7 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
   const shouldRequestLandscape = mobileLandscape.requiresLandscape && !monitor.open;
 
   return (
-    <main className="viewer-shell">
+    <main className={`viewer-shell${monitor.open ? " is-monitor-open" : ""}`}>
       <div
         className="viewer-world"
         aria-hidden={shouldRequestLandscape || undefined}
@@ -36,7 +36,7 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
         onEnterComplete={monitor.showContent}
         onExitComplete={monitor.finishClose}
       />
-      {shouldRequestLandscape && <LandscapeOrientationNotice />}
+      <LandscapeOrientationNotice />
       {fullscreen.isSupported && !shouldRequestLandscape && (
         <FullscreenButton
           isFullscreen={fullscreen.isFullscreen}

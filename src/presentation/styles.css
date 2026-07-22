@@ -55,7 +55,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: 1300;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   flex-direction: column;
@@ -73,6 +73,28 @@ body {
     radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.09), transparent 15rem),
     #050607;
   touch-action: none;
+}
+
+@media (
+  orientation: portrait
+) and (
+  hover: none
+) and (
+  pointer: coarse
+) and (
+  max-width: 720px
+) {
+  .viewer-shell:not(.is-monitor-open) .viewer-world {
+    pointer-events: none;
+  }
+
+  .viewer-shell:not(.is-monitor-open) .landscape-orientation-notice {
+    display: flex;
+  }
+
+  .viewer-shell:not(.is-monitor-open) .fullscreen-toggle {
+    display: none;
+  }
 }
 
 .landscape-orientation-notice p {
