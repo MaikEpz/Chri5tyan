@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  getLandscapeViewport,
   isPhoneDevice,
   isPortraitViewport,
 } from "../../src/presentation/hooks/useMobileLandscape.js";
@@ -66,4 +67,20 @@ test("usa tamaño, tacto y puntero grueso como respaldo para teléfonos", () => 
 test("detecta la orientación actual del viewport", () => {
   assert.equal(isPortraitViewport(createBrowser({ portrait: true })), true);
   assert.equal(isPortraitViewport(createBrowser({ portrait: false })), false);
+});
+
+test("mantiene el mismo lienzo horizontal al girar el teléfono", () => {
+  const portraitBrowser = createBrowser({ height: 740, portrait: true, width: 360 });
+  const landscapeBrowser = createBrowser({ height: 360, portrait: false, width: 740 });
+
+  assert.deepEqual(getLandscapeViewport(portraitBrowser), {
+    height: 360,
+    scale: 0.4864864864864865,
+    width: 740,
+  });
+  assert.deepEqual(getLandscapeViewport(landscapeBrowser), {
+    height: 360,
+    scale: 1,
+    width: 740,
+  });
 });

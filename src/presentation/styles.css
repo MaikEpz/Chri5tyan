@@ -37,8 +37,14 @@ body {
   height: 100%;
 }
 
-.viewer-shell.is-orientation-settling .viewer-world {
-  pointer-events: none;
+.viewer-shell.is-phone .viewer-world {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--mobile-landscape-width);
+  height: var(--mobile-landscape-height);
+  transform: translate(-50%, -50%) scale(var(--mobile-landscape-scale));
+  transform-origin: center;
 }
 
 .viewer-stage {

@@ -30,6 +30,21 @@ export function isPortraitViewport(browser = window) {
   return browser.innerHeight > browser.innerWidth;
 }
 
+export function getLandscapeViewport(browser = window) {
+  const viewportWidth = Number(browser.visualViewport?.width ?? browser.innerWidth) || 1;
+  const viewportHeight = Number(browser.visualViewport?.height ?? browser.innerHeight) || 1;
+  const screenWidth = Number(browser.screen?.width) || viewportWidth;
+  const screenHeight = Number(browser.screen?.height) || viewportHeight;
+  const width = Math.max(screenWidth, screenHeight);
+  const height = Math.min(screenWidth, screenHeight);
+
+  return {
+    height,
+    scale: Math.min(viewportWidth / width, viewportHeight / height, 1),
+    width,
+  };
+}
+
 export function useMobileLandscape(browser = window) {
   const [state, setState] = useState(() => readOrientationState(browser));
 
@@ -40,6 +55,7 @@ export function useMobileLandscape(browser = window) {
     update();
     browser.addEventListener?.("resize", update);
     browser.addEventListener?.("orientationchange", update);
+    browser.visualViewport?.addEventListener?.("resize", update);
 
     if (orientationQuery?.addEventListener) {
       orientationQuery.addEventListener("change", update);
@@ -50,6 +66,7 @@ export function useMobileLandscape(browser = window) {
     return () => {
       browser.removeEventListener?.("resize", update);
       browser.removeEventListener?.("orientationchange", update);
+      browser.visualViewport?.removeEventListener?.("resize", update);
 
       if (orientationQuery?.removeEventListener) {
         orientationQuery.removeEventListener("change", update);
@@ -69,6 +86,7 @@ function readOrientationState(browser) {
   return {
     isPhone,
     isPortrait,
+    landscapeViewport: getLandscapeViewport(browser),
     requiresLandscape: isPhone && isPortrait,
   };
 }

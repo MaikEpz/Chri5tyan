@@ -117,27 +117,16 @@ export function ScrollLookControls({
       targetPitch.current = initialPitch.current;
     };
 
-    const handleOrientationChange = () => {
-      resetPointerPosition();
-      yaw.current = initialYaw.current;
-      pitch.current = initialPitch.current;
-      camera.position.fromArray(cameraPosition);
-      camera.lookAt(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
-      camera.updateProjectionMatrix();
-    };
-
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
-    window.addEventListener("orientationchange", handleOrientationChange);
     document.documentElement.addEventListener("pointerleave", resetPointerPosition);
     window.addEventListener("blur", resetPointerPosition);
 
     return () => {
       window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("orientationchange", handleOrientationChange);
       document.documentElement.removeEventListener("pointerleave", resetPointerPosition);
       window.removeEventListener("blur", resetPointerPosition);
     };
-  }, [camera, cameraPosition, cameraTarget, enabled, gl.domElement]);
+  }, [enabled, gl.domElement]);
 
   useFrame((_, delta) => {
     if (!enabled || !initialized.current) return;

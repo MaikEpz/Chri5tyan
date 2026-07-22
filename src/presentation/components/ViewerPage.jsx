@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from "react";
 import { useFullscreenMode } from "../hooks/useFullscreenMode.js";
 import { useMobileLandscape } from "../hooks/useMobileLandscape.js";
 import { useMonitorExperience } from "../hooks/useMonitorExperience.js";
@@ -8,31 +7,22 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
   const fullscreen = useFullscreenMode();
   const mobileLandscape = useMobileLandscape();
   const monitor = useMonitorExperience();
-  const [orientationSettling, setOrientationSettling] = useState(false);
-  const previousPortraitRef = useRef(mobileLandscape.isPortrait);
   const shouldRequestLandscape = mobileLandscape.requiresLandscape && !monitor.isOpen;
-
-  useEffect(() => {
-    const changedToLandscape = previousPortraitRef.current && !mobileLandscape.isPortrait;
-    previousPortraitRef.current = mobileLandscape.isPortrait;
-
-    if (!mobileLandscape.isPhone || !changedToLandscape || monitor.isOpen) return undefined;
-
-    setOrientationSettling(true);
-    monitor.resetCamera();
-    const settleTimeout = window.setTimeout(() => setOrientationSettling(false), 650);
-
-    return () => window.clearTimeout(settleTimeout);
-  }, [mobileLandscape.isPhone, mobileLandscape.isPortrait, monitor.isOpen, monitor.resetCamera]);
-
-  const worldInteractionBlocked = shouldRequestLandscape || orientationSettling;
+  const landscapeStyle = mobileLandscape.isPhone
+    ? {
+        "--mobile-landscape-height": `${mobileLandscape.landscapeViewport.height}px`,
+        "--mobile-landscape-scale": mobileLandscape.landscapeViewport.scale,
+        "--mobile-landscape-width": `${mobileLandscape.landscapeViewport.width}px`,
+      }
+    : undefined;
 
   return (
-    <main className={`viewer-shell${monitor.isOpen ? " is-monitor-open" : ""}${orientationSettling ? " is-orientation-settling" : ""}`}>
+    <main className={`viewer-shell${mobileLandscape.isPhone ? " is-phone" : ""}${monitor.isOpen ? " is-monitor-open" : ""}`}>
       <div
         className="viewer-world"
         aria-hidden={shouldRequestLandscape || undefined}
-        inert={worldInteractionBlocked || undefined}
+        inert={shouldRequestLandscape || undefined}
+        style={landscapeStyle}
       >
         <ViewportComponent
           modelAsset={modelAsset}
@@ -55,7 +45,7 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
         onExitComplete={monitor.finishClose}
       />
       <LandscapeOrientationNotice />
-      {fullscreen.isSupported && !worldInteractionBlocked && (
+      {fullscreen.isSupported && !shouldRequestLandscape && (
         <FullscreenButton
           isFullscreen={fullscreen.isFullscreen}
           onToggle={fullscreen.toggle}
