@@ -3,7 +3,7 @@ import { EMISSIVE_LIGHT_MATERIALS } from "../sceneConfig.js";
 import { getMaterialList } from "../model/modelUtils.js";
 
 export function configureExportedLight(light) {
-  const isScreenFillLight = light.isPointLight && (light.name === "Point" || light.name === "Point.004");
+  const isScreenFillLight = light.name === "Point";
   light.castShadow = !isScreenFillLight && (light.isDirectionalLight || light.isPointLight || light.isSpotLight);
 
   if (light.shadow) {

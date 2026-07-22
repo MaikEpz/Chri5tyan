@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { AdaptiveDpr, Loader, PerformanceMonitor } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
-import { getDevicePerformanceProfile } from "../browser/devicePerformance.js";
 import { ViewerScene } from "./ViewerScene.jsx";
 import { DynamicExposure } from "./effects/DynamicExposure.jsx";
 import { CAMERA } from "./sceneConfig.js";
@@ -17,8 +16,6 @@ export function ReactThreeViewport({
   onMonitorOpen,
   onMonitorReady,
 }) {
-  const performance = getDevicePerformanceProfile();
-
   return (
     <section className="viewer-stage" aria-label={`Visor 3D del modelo ${modelAsset.name}`}>
       <Canvas
@@ -29,9 +26,9 @@ export function ReactThreeViewport({
           far: 1000,
           position: CAMERA.position.toArray(),
         }}
-        dpr={performance.lowPowerMode ? [0.6, 1] : [1, performance.maximumPixelRatio]}
+        dpr={[1, 3]}
         gl={{
-          antialias: !performance.lowPowerMode,
+          antialias: true,
           alpha: false,
           powerPreference: "high-performance",
         }}
@@ -39,17 +36,16 @@ export function ReactThreeViewport({
           gl.toneMapping = THREE.AgXToneMapping;
           gl.toneMappingExposure = 0.85;
         }}
-        shadows={performance.lowPowerMode ? false : "percentage"}
+        shadows="percentage"
       >
         <color attach="background" args={["#050607"]} />
         <DynamicExposure />
         <PerformanceMonitor>
-          {!performance.unrestrictedMobile && <AdaptiveDpr />}
+          <AdaptiveDpr />
           <Suspense fallback={null}>
             <ViewerScene
               activeMonitorView={activeMonitorView}
               cameraResetKey={cameraResetKey}
-              lowPowerMode={performance.lowPowerMode}
               modelAsset={modelAsset}
               monitorContentVisible={monitorContentVisible}
               onActiveMonitorViewChange={onActiveMonitorViewChange}

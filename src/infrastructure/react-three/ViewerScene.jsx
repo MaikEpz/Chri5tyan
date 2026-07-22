@@ -1,20 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useThree } from "@react-three/fiber";
+import { getResponsiveCameraView } from "./cameraView.js";
 import { ScrollLookControls } from "./controls/ScrollLookControls.jsx";
 import { AmbientDust } from "./effects/AmbientDust.jsx";
 import { SceneLighting } from "./lights/SceneLighting.jsx";
 import { LoadedModel } from "./model/LoadedModel.jsx";
 import { MonitorScreen } from "./monitor/MonitorScreen.jsx";
-import { CAMERA } from "./sceneConfig.js";
-
-const CAMERA_POSITION = CAMERA.position.toArray();
-const CAMERA_TARGET = CAMERA.target.toArray();
 const DESKTOP_SCREEN = "desktop";
 const PHONE_SCREEN = "phone";
 
 export function ViewerScene({
   activeMonitorView = 0,
   cameraResetKey = 0,
-  lowPowerMode = false,
   modelAsset,
   monitorContentVisible = false,
   onActiveMonitorViewChange = () => {},
@@ -22,6 +19,11 @@ export function ViewerScene({
   onMonitorOpen = () => {},
   onMonitorReady = () => {},
 }) {
+  const { height, width } = useThree((state) => state.size);
+  const cameraView = useMemo(
+    () => getResponsiveCameraView(width, height),
+    [height, width],
+  );
   const [modelReady, setModelReady] = useState(false);
   const [screenAnchor, setScreenAnchor] = useState(null);
   const [phoneScreenAnchor, setPhoneScreenAnchor] = useState(null);
@@ -82,9 +84,8 @@ export function ViewerScene({
   return (
     <>
       <SceneLighting useFallback={!hasModelLights} />
-      {!lowPowerMode && <AmbientDust />}
+      <AmbientDust />
       <LoadedModel
-        lowPowerMode={lowPowerMode}
         source={modelAsset.source}
         onReady={handleModelReady}
         onScreenAnchor={setScreenAnchor}
@@ -126,8 +127,8 @@ export function ViewerScene({
         onLogoOpen={() => handleScreenOpen(PHONE_SCREEN)}
       />
       <ScrollLookControls
-        cameraPosition={CAMERA_POSITION}
-        cameraTarget={CAMERA_TARGET}
+        cameraPosition={cameraView.position}
+        cameraTarget={cameraView.target}
         enabled={modelReady}
         focusAnchor={focusedScreen ? activeAnchor : null}
         onFocusComplete={handleFocusComplete}
