@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
 
 const PHONE_USER_AGENT = /Android.+Mobile|iPhone|iPod|Windows Phone/i;
-const PHONE_MAX_SHORT_EDGE = 600;
+const PHONE_MAX_SHORT_EDGE = 720;
 
 export function isPhoneDevice(browser = window) {
   const navigatorRef = browser.navigator ?? {};
   const userAgent = navigatorRef.userAgent ?? "";
 
-  if (typeof navigatorRef.userAgentData?.mobile === "boolean") {
-    return navigatorRef.userAgentData.mobile;
-  }
+  if (navigatorRef.userAgentData?.mobile === true) return true;
 
   if (PHONE_USER_AGENT.test(userAgent)) return true;
 

@@ -55,6 +55,12 @@ test("excluye tablets y equipos de escritorio", () => {
 
 test("usa tamaño, tacto y puntero grueso como respaldo para teléfonos", () => {
   assert.equal(isPhoneDevice(createBrowser({ mobile: undefined })), true);
+  assert.equal(isPhoneDevice(createBrowser({ mobile: false })), true);
+  assert.equal(isPhoneDevice(createBrowser({
+    height: 882,
+    mobile: false,
+    width: 674,
+  })), true);
 });
 
 test("detecta la orientación actual del viewport", () => {
