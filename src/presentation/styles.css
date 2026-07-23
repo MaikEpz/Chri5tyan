@@ -1444,344 +1444,235 @@ body {
   }
 }
 
-/* iPhone production references */
+/* iPhone vertical video feed */
 .phone-portfolio-workspace {
-  display: flex;
+  position: relative;
   flex: 1;
-  min-height: 100%;
-  flex-direction: column;
-  color: #f6f6f3;
-  background:
-    radial-gradient(circle at 50% -10%, rgba(255, 255, 255, 0.075), transparent 28rem),
-    #080808;
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  color: #fff;
+  background: #000;
 }
 
 .phone-portfolio-workspace button {
   font: inherit;
 }
 
-.portfolio-header {
-  position: sticky;
+.phone-feed-controls {
+  position: absolute;
   top: 0;
-  z-index: 5;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  min-height: 4.75rem;
-  align-items: center;
-  gap: 1rem;
-  padding: 0 clamp(1rem, 4vw, 3.5rem);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(8, 8, 8, 0.88);
-  backdrop-filter: blur(24px);
-}
-
-.portfolio-header > button,
-.portfolio-footer button,
-.portfolio-reference-content > button {
-  border: 0;
-  color: rgba(255, 255, 255, 0.62);
-  background: transparent;
-  cursor: pointer;
-}
-
-.portfolio-header > button {
-  justify-self: start;
+  right: 0;
+  left: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 0;
+  justify-content: space-between;
+  padding:
+    max(1rem, env(safe-area-inset-top))
+    max(1rem, env(safe-area-inset-right))
+    1rem
+    max(1rem, env(safe-area-inset-left));
+  pointer-events: none;
 }
 
-.portfolio-header > button:hover,
-.portfolio-footer button:hover,
-.portfolio-reference-content > button:hover {
-  color: #fff;
-}
-
-.portfolio-brand {
-  display: flex;
-  width: 8.5rem;
-  height: 3.2rem;
+.phone-feed-back,
+.phone-feed-audio {
+  display: inline-flex;
+  min-height: 2.75rem;
   align-items: center;
   justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.34);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(14px);
+  cursor: pointer;
+  pointer-events: auto;
 }
 
-.portfolio-brand img {
+.phone-feed-back {
+  gap: 0.55rem;
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+}
+
+.phone-feed-audio {
+  width: 2.75rem;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 1rem;
+}
+
+.phone-feed-back:hover,
+.phone-feed-audio:hover {
+  border-color: rgba(255, 255, 255, 0.58);
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.phone-feed-back:focus-visible,
+.phone-feed-audio:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.phone-video-feed {
+  width: 100%;
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  touch-action: pan-y;
+}
+
+.phone-video-feed::-webkit-scrollbar {
+  display: none;
+}
+
+.phone-video-slide {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: #090909;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.phone-video-poster,
+.phone-feed-video {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  transform: translateY(43%) scale(1.65);
-  transform-origin: center;
+  object-fit: cover;
 }
 
-.portfolio-header-label {
-  justify-self: end;
-  color: rgba(255, 255, 255, 0.38);
+.phone-feed-video {
+  z-index: 1;
+}
+
+.phone-video-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.38), transparent 24%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.82), transparent 43%);
+  pointer-events: none;
+}
+
+.phone-video-copy {
+  position: absolute;
+  right: max(1.25rem, env(safe-area-inset-right));
+  bottom: max(2rem, calc(env(safe-area-inset-bottom) + 1rem));
+  left: max(1.25rem, env(safe-area-inset-left));
+  z-index: 3;
+  max-width: 38rem;
+  pointer-events: none;
+}
+
+.phone-video-copy span {
+  color: rgba(255, 255, 255, 0.7);
   font-size: 0.68rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.portfolio-main {
-  width: min(100%, 78rem);
-  margin: 0 auto;
-  padding: clamp(3rem, 8vh, 6.5rem) clamp(1rem, 5vw, 4rem) 4rem;
-}
-
-.portfolio-intro {
-  max-width: 48rem;
-}
-
-.portfolio-intro > span {
-  color: rgba(255, 255, 255, 0.42);
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 750;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
-.portfolio-intro h1 {
-  max-width: 10ch;
-  margin: 0.85rem 0 1rem;
-  font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: clamp(3.25rem, 8vw, 7rem);
-  font-weight: 600;
-  line-height: 0.88;
-  letter-spacing: -0.05em;
-}
-
-.portfolio-intro > p {
-  max-width: 39rem;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.52);
-  font-size: clamp(0.95rem, 1.7vw, 1.15rem);
-  line-height: 1.6;
-}
-
-.portfolio-reference-list {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 1rem;
-  margin-top: clamp(2.5rem, 7vh, 5rem);
-}
-
-.portfolio-reference-card {
-  display: flex;
-  grid-column: span 5;
-  min-width: 0;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.105);
-  border-radius: 1.25rem;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015));
-}
-
-.portfolio-reference-card[data-featured="true"] {
-  grid-column: span 7;
-  grid-row: span 2;
-}
-
-.portfolio-reference-media {
-  position: relative;
-  aspect-ratio: 16 / 8;
-  overflow: hidden;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
-  background: #111;
-}
-
-.portfolio-reference-card[data-featured="true"] .portfolio-reference-media {
-  flex: 1 0 auto;
-  min-height: 22rem;
-  aspect-ratio: auto;
-}
-
-.portfolio-reference-media::after {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.48));
-  content: "";
-  pointer-events: none;
-}
-
-.portfolio-reference-media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.portfolio-reference-card:hover .portfolio-reference-media img {
-  transform: scale(1.035);
-}
-
-.portfolio-reference-media > span {
-  position: absolute;
-  right: 1rem;
-  bottom: 0.8rem;
-  z-index: 1;
-  color: rgba(255, 255, 255, 0.75);
-  font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: 1.25rem;
-}
-
-.portfolio-reference-content {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  padding: clamp(1.25rem, 2.5vw, 1.75rem);
-}
-
-.portfolio-reference-heading {
-  display: block;
-}
-
-.portfolio-reference-heading small {
-  color: rgba(255, 255, 255, 0.42);
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.portfolio-reference-heading h2 {
-  margin: 0.55rem 0 0;
-  font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: clamp(2rem, 3.5vw, 3rem);
-  font-weight: 600;
-  line-height: 0.95;
-  letter-spacing: -0.035em;
-}
-
-.portfolio-reference-heading p {
-  margin: 0.4rem 0 0;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 0.75rem;
-}
-
-.portfolio-reference-description {
-  margin: 1.5rem 0;
-  color: rgba(255, 255, 255, 0.58);
-  line-height: 1.55;
-}
-
-.portfolio-reference-details {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.portfolio-reference-details li {
-  padding: 0.45rem 0.6rem;
-  border-radius: 999px;
-  color: rgba(255, 255, 255, 0.58);
-  background: rgba(255, 255, 255, 0.06);
-  font-size: 0.7rem;
-}
-
-.portfolio-reference-services {
-  margin-top: auto;
-  padding-top: 1.5rem;
-}
-
-.portfolio-reference-services span {
-  color: rgba(255, 255, 255, 0.3);
-  font-size: 0.63rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.portfolio-reference-services p {
+.phone-video-copy h1 {
   margin: 0.45rem 0 0;
-  color: rgba(255, 255, 255, 0.68);
-  font-size: 0.75rem;
-  line-height: 1.5;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: clamp(3.5rem, 11vw, 8rem);
+  font-weight: 600;
+  line-height: 0.84;
+  letter-spacing: -0.055em;
+  text-wrap: balance;
 }
 
-.portfolio-reference-content > button {
-  align-self: flex-start;
-  margin-top: 1.3rem;
-  padding: 0;
-}
-
-.portfolio-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1rem;
-  padding: 1.5rem 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.09);
-}
-
-.portfolio-footer p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.42);
-}
-
-.portfolio-footer button {
-  padding: 0;
-  text-align: right;
-}
-
-@media (max-width: 820px) {
-  .portfolio-reference-list {
-    grid-template-columns: 1fr;
-  }
-
-  .portfolio-reference-card,
-  .portfolio-reference-card[data-featured="true"] {
-    grid-column: auto;
-    grid-row: auto;
-    min-height: 0;
-  }
-
-  .portfolio-reference-card[data-featured="true"] .portfolio-reference-media {
-    min-height: 0;
-    aspect-ratio: 16 / 10;
-  }
+.phone-video-position {
+  position: absolute;
+  right: max(1.25rem, env(safe-area-inset-right));
+  bottom: max(2rem, calc(env(safe-area-inset-bottom) + 1rem));
+  z-index: 3;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
 }
 
 @media (max-width: 560px) {
-  .portfolio-header {
-    grid-template-columns: 1fr auto 1fr;
-    padding-inline: 0.85rem;
+  .phone-feed-back {
+    width: 2.75rem;
+    padding: 0;
   }
 
-  .portfolio-header > button {
-    font-size: 0;
+  .phone-feed-back span:last-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
-  .portfolio-header > button span {
-    font-size: 1rem;
+  .phone-video-copy {
+    right: 4.5rem;
   }
 
-  .portfolio-brand {
-    width: 7.25rem;
+  .phone-video-copy h1 {
+    font-size: clamp(3.25rem, 17vw, 5.5rem);
+  }
+}
+
+@media (orientation: landscape) {
+  .phone-video-poster {
+    opacity: 0.42;
+    filter: blur(22px) brightness(0.72);
+    transform: scale(1.08);
   }
 
-  .portfolio-header-label {
-    font-size: 0.58rem;
+  .phone-feed-video {
+    right: auto;
+    left: 50%;
+    width: 56.25dvh;
+    max-width: 100%;
+    object-fit: cover;
+    transform: translateX(-50%);
+    box-shadow:
+      -1.5rem 0 3rem rgba(0, 0, 0, 0.28),
+      1.5rem 0 3rem rgba(0, 0, 0, 0.28);
   }
 
-  .portfolio-main {
-    padding-top: 3rem;
+  .phone-video-copy {
+    right: auto;
+    left: max(
+      calc(env(safe-area-inset-left) + 1rem),
+      calc(50% - 28.125dvh + 1rem)
+    );
+    max-width: min(34rem, calc(56.25dvh - 2rem));
   }
 
-  .portfolio-intro h1 {
-    font-size: clamp(3.2rem, 17vw, 5rem);
+  .phone-video-copy h1 {
+    font-size: clamp(2.4rem, 8dvh, 4.5rem);
   }
 
-  .portfolio-footer {
-    align-items: flex-start;
-    flex-direction: column;
+  .phone-video-position {
+    top: max(1rem, calc(env(safe-area-inset-top) + 0.75rem));
+    right: max(
+      calc(env(safe-area-inset-right) + 1rem),
+      calc(50% - 28.125dvh + 1rem)
+    );
+    bottom: auto;
   }
+}
 
-  .portfolio-footer button {
-    text-align: left;
+@media (prefers-reduced-motion: reduce) {
+  .phone-video-feed {
+    scroll-behavior: auto;
   }
 }

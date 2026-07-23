@@ -4,6 +4,7 @@ export const PRODUCTION_REFERENCES = Object.freeze([
   Object.freeze({
     id: "reference-reel-movimiento",
     imageId: "reference-reel-movimiento",
+    videoUrl: null,
     type: PRODUCTION_TYPE.REEL,
     category: "Reel vertical",
     title: "Movimiento",
@@ -15,6 +16,7 @@ export const PRODUCTION_REFERENCES = Object.freeze([
   Object.freeze({
     id: "reference-spot-origen",
     imageId: "reference-spot-origen",
+    videoUrl: null,
     type: PRODUCTION_TYPE.SPOT,
     category: "Spot publicitario",
     title: "Origen",
@@ -26,6 +28,7 @@ export const PRODUCTION_REFERENCES = Object.freeze([
   Object.freeze({
     id: "reference-cinema-ultima-luz",
     imageId: "reference-cinema-ultima-luz",
+    videoUrl: null,
     type: PRODUCTION_TYPE.CINEMA,
     category: "Producción cine",
     title: "La última luz",

@@ -27,7 +27,7 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
         onEnterComplete={monitor.showContent}
         onExitComplete={monitor.finishClose}
       />
-      {fullscreen.isSupported && (
+      {fullscreen.isSupported && !monitor.open && (
         <FullscreenButton
           isFullscreen={fullscreen.isFullscreen}
           onToggle={fullscreen.toggle}
