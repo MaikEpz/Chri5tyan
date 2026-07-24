@@ -1,10 +1,55 @@
+import { useCallback, useEffect, useState } from "react";
 import { useFullscreenMode } from "../hooks/useFullscreenMode.js";
 import { useMonitorExperience } from "../hooks/useMonitorExperience.js";
 import { FullscreenMonitor } from "./monitor/FullscreenMonitor.jsx";
 
+const FULLSCREEN_SUGGESTION_KEY = "chris-fullscreen-suggestion-seen";
+
 export function ViewerPage({ modelAsset, ViewportComponent }) {
   const fullscreen = useFullscreenMode();
   const monitor = useMonitorExperience();
+  const [worldReady, setWorldReady] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => (
+    window.matchMedia("(pointer: coarse), (max-width: 768px)").matches
+  ));
+  const [suggestionDismissed, setSuggestionDismissed] = useState(() => {
+    try {
+      return window.sessionStorage.getItem(FULLSCREEN_SUGGESTION_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const mobileQuery = window.matchMedia("(pointer: coarse), (max-width: 768px)");
+    const handleMobileChange = () => setIsMobile(mobileQuery.matches);
+    handleMobileChange();
+    mobileQuery.addEventListener("change", handleMobileChange);
+    return () => mobileQuery.removeEventListener("change", handleMobileChange);
+  }, []);
+
+  const dismissFullscreenSuggestion = useCallback(() => {
+    setSuggestionDismissed(true);
+    try {
+      window.sessionStorage.setItem(FULLSCREEN_SUGGESTION_KEY, "true");
+    } catch {
+      // La sugerencia puede descartarse aunque el almacenamiento esté deshabilitado.
+    }
+  }, []);
+
+  const acceptFullscreenSuggestion = useCallback(async () => {
+    dismissFullscreenSuggestion();
+    await fullscreen.toggle();
+  }, [dismissFullscreenSuggestion, fullscreen]);
+
+  const showFullscreenSuggestion = (
+    worldReady
+    && isMobile
+    && fullscreen.isSupported
+    && !fullscreen.isFullscreen
+    && !monitor.open
+    && !suggestionDismissed
+  );
 
   return (
     <main className="viewer-shell">
@@ -17,6 +62,7 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
         onMonitorClose={monitor.requestClose}
         onMonitorOpen={monitor.open}
         onMonitorReady={monitor.markReady}
+        onWorldReady={() => setWorldReady(true)}
       />
       <FullscreenMonitor
         isClosing={monitor.closing}
@@ -27,13 +73,53 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
         onEnterComplete={monitor.showContent}
         onExitComplete={monitor.finishClose}
       />
-      {fullscreen.isSupported && !monitor.open && (
+      {showFullscreenSuggestion && (
+        <FullscreenSuggestion
+          onAccept={acceptFullscreenSuggestion}
+          onDismiss={dismissFullscreenSuggestion}
+        />
+      )}
+      {fullscreen.isSupported && !monitor.open && !showFullscreenSuggestion && (
         <FullscreenButton
           isFullscreen={fullscreen.isFullscreen}
           onToggle={fullscreen.toggle}
         />
       )}
     </main>
+  );
+}
+
+function FullscreenSuggestion({ onAccept, onDismiss }) {
+  return (
+    <aside
+      className="fullscreen-suggestion"
+      aria-labelledby="fullscreen-suggestion-title"
+      aria-describedby="fullscreen-suggestion-description"
+    >
+      <div className="fullscreen-suggestion-icon" aria-hidden="true">⛶</div>
+      <div className="fullscreen-suggestion-copy">
+        <strong id="fullscreen-suggestion-title">Una mejor vista</strong>
+        <p id="fullscreen-suggestion-description">
+          Activa la pantalla completa para explorar el mundo con más espacio.
+        </p>
+      </div>
+      <div className="fullscreen-suggestion-actions">
+        <button
+          className="fullscreen-suggestion-primary"
+          type="button"
+          onClick={onAccept}
+        >
+          Activar
+        </button>
+        <button
+          className="fullscreen-suggestion-secondary"
+          type="button"
+          onClick={onDismiss}
+        >
+          Ahora no
+        </button>
+      </div>
+    </aside>
   );
 }
 

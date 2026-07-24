@@ -45,6 +45,70 @@ body {
   touch-action: none;
 }
 
+.logo-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: clamp(1rem, 2.5vh, 1.5rem);
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.78);
+  background:
+    radial-gradient(circle at 50% 46%, rgba(45, 57, 52, 0.24), transparent 34rem),
+    #050607;
+  pointer-events: none;
+}
+
+.logo-loader-mark {
+  position: relative;
+  width: min(62vw, 34rem);
+  aspect-ratio: 1368 / 859;
+}
+
+.logo-loader-mark img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.logo-loader-base {
+  opacity: 0.14;
+}
+
+.logo-loader-fill {
+  clip-path: inset(calc(100% - var(--logo-load-progress)) 0 0);
+  filter: drop-shadow(0 0 1.4rem rgba(255, 255, 255, 0.16));
+  transition: clip-path 0.28s ease-out;
+}
+
+.logo-loader-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.logo-loader-label::after {
+  content: "...";
+  display: inline-block;
+  width: 1.35em;
+  overflow: hidden;
+  vertical-align: bottom;
+  clip-path: inset(0 100% 0 0);
+  animation: logo-loader-dots 1.2s steps(3, end) infinite;
+}
+
+@keyframes logo-loader-dots {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
 .fullscreen-toggle {
   position: fixed;
   right: max(1rem, env(safe-area-inset-right));
@@ -85,6 +149,101 @@ body {
 .fullscreen-toggle:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 3px;
+}
+
+.fullscreen-suggestion {
+  position: fixed;
+  left: 50%;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 1200;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.8rem 0.9rem;
+  width: min(calc(100vw - 2rem), 27rem);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 1.15rem;
+  padding: 1rem;
+  color: #fff;
+  background: rgba(7, 8, 8, 0.9);
+  box-shadow: 0 1.25rem 3.5rem rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(18px);
+  transform: translateX(-50%);
+  animation: fullscreen-suggestion-enter 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.fullscreen-suggestion-icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.8rem;
+  color: #080a09;
+  background: #fff;
+  font-size: 1.3rem;
+}
+
+.fullscreen-suggestion-copy {
+  align-self: center;
+  min-width: 0;
+}
+
+.fullscreen-suggestion-copy strong {
+  display: block;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.fullscreen-suggestion-copy p {
+  margin: 0.3rem 0 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.fullscreen-suggestion-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.fullscreen-suggestion-actions button {
+  min-height: 2.65rem;
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.fullscreen-suggestion-primary {
+  border: 1px solid #fff;
+  color: #080a09;
+  background: #fff;
+}
+
+.fullscreen-suggestion-secondary {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.fullscreen-suggestion-actions button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+@keyframes fullscreen-suggestion-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 1rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 .monitor-immersive-shell {

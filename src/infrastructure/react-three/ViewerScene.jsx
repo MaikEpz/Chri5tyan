@@ -97,8 +97,7 @@ export function ViewerScene({
       <MonitorScreen
         activeView={activeMonitorView}
         anchor={screenAnchor}
-        animateCtaDots
-        idleCta="Cargando"
+        idleCta="Explorar"
         isOpen={monitorContentVisible && focusedScreen === DESKTOP_SCREEN}
         isFocused={focusedScreen === DESKTOP_SCREEN}
         onActiveViewChange={onActiveMonitorViewChange}
