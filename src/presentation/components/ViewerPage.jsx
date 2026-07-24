@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
+import {
+  FULLSCREEN_SUGGESTION_KEY,
+  shouldShowFullscreenButton,
+  shouldShowFullscreenSuggestion,
+} from "../fullscreenUi.js";
 import { useFullscreenMode } from "../hooks/useFullscreenMode.js";
 import { useMonitorExperience } from "../hooks/useMonitorExperience.js";
 import { FullscreenMonitor } from "./monitor/FullscreenMonitor.jsx";
-
-const FULLSCREEN_SUGGESTION_KEY = "chris-fullscreen-suggestion-seen";
 
 export function ViewerPage({ modelAsset, ViewportComponent }) {
   const fullscreen = useFullscreenMode();
@@ -19,6 +22,7 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
       return false;
     }
   });
+  const handleWorldReady = useCallback(() => setWorldReady(true), []);
 
   useEffect(() => {
     const mobileQuery = window.matchMedia("(pointer: coarse), (max-width: 768px)");
@@ -40,16 +44,20 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
   const acceptFullscreenSuggestion = useCallback(async () => {
     dismissFullscreenSuggestion();
     await fullscreen.toggle();
-  }, [dismissFullscreenSuggestion, fullscreen]);
+  }, [dismissFullscreenSuggestion, fullscreen.toggle]);
 
-  const showFullscreenSuggestion = (
+  const showFullscreenSuggestion = shouldShowFullscreenSuggestion({
+    isFullscreen: fullscreen.isFullscreen,
+    isMobile,
+    isSupported: fullscreen.isSupported,
+    monitorOpen: monitor.open,
+    suggestionDismissed,
     worldReady
-    && isMobile
-    && fullscreen.isSupported
-    && !fullscreen.isFullscreen
-    && !monitor.open
-    && !suggestionDismissed
-  );
+  });
+  const showFullscreenButton = shouldShowFullscreenButton({
+    isSupported: fullscreen.isSupported,
+    monitorOpen: monitor.open,
+  });
 
   return (
     <main className="viewer-shell">
@@ -62,7 +70,7 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
         onMonitorClose={monitor.requestClose}
         onMonitorOpen={monitor.open}
         onMonitorReady={monitor.markReady}
-        onWorldReady={() => setWorldReady(true)}
+        onWorldReady={handleWorldReady}
       />
       <FullscreenMonitor
         isClosing={monitor.closing}
@@ -79,13 +87,28 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
           onDismiss={dismissFullscreenSuggestion}
         />
       )}
-      {fullscreen.isSupported && !monitor.open && !showFullscreenSuggestion && (
+      {showFullscreenButton && (
         <FullscreenButton
           isFullscreen={fullscreen.isFullscreen}
           onToggle={fullscreen.toggle}
         />
       )}
+      {fullscreen.error && !monitor.open && (
+        <FullscreenError
+          message={fullscreen.error}
+          onDismiss={fullscreen.clearError}
+        />
+      )}
     </main>
+  );
+}
+
+function FullscreenError({ message, onDismiss }) {
+  return (
+    <div className="fullscreen-error" role="status">
+      <span>{message}</span>
+      <button type="button" aria-label="Cerrar aviso" onClick={onDismiss}>×</button>
+    </div>
   );
 }
 

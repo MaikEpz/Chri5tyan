@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef } from "react";
+import { Suspense } from "react";
 import { AdaptiveDpr, PerformanceMonitor, useProgress } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
@@ -8,27 +8,9 @@ import { ViewerScene } from "./ViewerScene.jsx";
 import { DynamicExposure } from "./effects/DynamicExposure.jsx";
 import { CAMERA } from "./sceneConfig.js";
 
-function LogoLoader({ onWorldReady }) {
-  const { active, progress, total } = useProgress();
-  const loadingStartedRef = useRef(false);
-  const readyNotifiedRef = useRef(false);
+function LogoLoader() {
+  const { active, progress } = useProgress();
   const boundedProgress = Math.min(100, Math.max(0, progress));
-
-  useEffect(() => {
-    if (active || total > 0) {
-      loadingStartedRef.current = true;
-    }
-
-    if (
-      loadingStartedRef.current
-      && !active
-      && progress >= 100
-      && !readyNotifiedRef.current
-    ) {
-      readyNotifiedRef.current = true;
-      onWorldReady?.();
-    }
-  }, [active, onWorldReady, progress, total]);
 
   if (!active) {
     return null;
@@ -99,11 +81,12 @@ export function ReactThreeViewport({
               onMonitorClose={onMonitorClose}
               onMonitorOpen={onMonitorOpen}
               onMonitorReady={onMonitorReady}
+              onWorldReady={onWorldReady}
             />
           </Suspense>
         </PerformanceMonitor>
       </Canvas>
-      <LogoLoader onWorldReady={onWorldReady} />
+      <LogoLoader />
     </section>
   );
 }

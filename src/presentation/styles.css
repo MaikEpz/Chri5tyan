@@ -154,7 +154,7 @@ body {
 .fullscreen-suggestion {
   position: fixed;
   left: 50%;
-  bottom: max(1rem, env(safe-area-inset-bottom));
+  bottom: calc(max(1rem, env(safe-area-inset-bottom)) + 3.7rem);
   z-index: 1200;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -169,6 +169,41 @@ body {
   backdrop-filter: blur(18px);
   transform: translateX(-50%);
   animation: fullscreen-suggestion-enter 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.fullscreen-error {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: calc(max(1rem, env(safe-area-inset-bottom)) + 3.7rem);
+  z-index: 1201;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  width: min(calc(100vw - 2rem), 24rem);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.9rem;
+  padding: 0.85rem 0.9rem;
+  color: #fff;
+  background: rgba(7, 8, 8, 0.94);
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(18px);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.fullscreen-error span {
+  flex: 1;
+}
+
+.fullscreen-error button {
+  border: 0;
+  padding: 0;
+  color: #fff;
+  background: transparent;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .fullscreen-suggestion-icon {
@@ -1768,6 +1803,17 @@ body {
   .phone-feed-back {
     width: 2.75rem;
     padding: 0;
+  }
+
+  .fullscreen-suggestion,
+  .fullscreen-error {
+    bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 3.5rem);
+  }
+
+  .fullscreen-error {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   .phone-feed-back span:last-child {

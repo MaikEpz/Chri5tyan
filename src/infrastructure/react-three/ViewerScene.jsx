@@ -19,6 +19,7 @@ export function ViewerScene({
   onMonitorClose = () => {},
   onMonitorOpen = () => {},
   onMonitorReady = () => {},
+  onWorldReady = () => {},
 }) {
   const { height, width } = useThree((state) => state.size);
   const cameraView = useMemo(
@@ -34,7 +35,10 @@ export function ViewerScene({
   const [viewResetKey, setViewResetKey] = useState(0);
   const phoneUnlockTimeoutRef = useRef(null);
   const lastCameraResetKeyRef = useRef(cameraResetKey);
-  const handleModelReady = useCallback(() => setModelReady(true), []);
+  const handleModelReady = useCallback(() => {
+    setModelReady(true);
+    onWorldReady();
+  }, [onWorldReady]);
   const handleScreenOpen = useCallback((screen) => {
     setFocusedScreen(screen);
     onMonitorOpen(screen);
