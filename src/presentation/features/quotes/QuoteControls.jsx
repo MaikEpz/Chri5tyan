@@ -7,14 +7,36 @@ export function ConfigSection({ title, index, children }) {
   );
 }
 
-export function QuantityControl({ label, value, minimum, onChange }) {
+export function QuantityControl({
+  label,
+  value,
+  minimum,
+  maximum,
+  priceHint,
+  onChange,
+}) {
+  const hasMaximum = Number.isFinite(maximum);
+
   return (
     <div className="quantity-control">
-      <div><span>{label}</span><small>Mínimo {minimum}</small></div>
+      <div>
+        <span>{label}</span>
+        <small>
+          Mínimo {minimum}
+          {hasMaximum ? ` · Máximo ${maximum}` : ""}
+          {priceHint ? ` · ${priceHint}` : ""}
+        </small>
+      </div>
       <div className="stepper">
         <button type="button" disabled={value <= minimum} onClick={() => onChange(value - 1)}>−</button>
         <strong>{value}</strong>
-        <button type="button" onClick={() => onChange(value + 1)}>+</button>
+        <button
+          type="button"
+          disabled={hasMaximum && value >= maximum}
+          onClick={() => onChange(value + 1)}
+        >
+          +
+        </button>
       </div>
     </div>
   );

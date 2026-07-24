@@ -38,6 +38,70 @@ export function hasProductionAssistant(quote) {
   return quote.lights > 2;
 }
 
+export function calculateProductionQuote(quote) {
+  const production = getProductionType(quote.type);
+  const additions = [];
+
+  addPriceLine(
+    additions,
+    "Cámara adicional",
+    quote.cameras - production.minimumCameras,
+    production.prices.additionalCamera,
+  );
+  addPriceLine(
+    additions,
+    "Luz adicional",
+    quote.lights - production.minimumLights,
+    production.prices.additionalLight,
+  );
+  addPriceLine(
+    additions,
+    "Hora adicional",
+    quote.hours - production.baseHours,
+    production.prices.additionalHour,
+  );
+  addPriceLine(
+    additions,
+    "Edición de video adicional",
+    quote.videos - 1,
+    production.prices.additionalVideo,
+  );
+  addPriceLine(
+    additions,
+    "Persona de casting",
+    quote.casting,
+    production.prices.castingPerson,
+  );
+
+  if (quote.makeup && !production.makeupByDefault) {
+    addPriceLine(additions, "Maquillaje", 1, production.prices.makeup);
+  }
+  if (quote.professionalSound && !production.professionalSoundByDefault) {
+    addPriceLine(additions, "Sonido profesional", 1, production.prices.professionalSound);
+  }
+  if (hasProductionAssistant(quote) && production.minimumLights <= 2) {
+    addPriceLine(additions, "Gaffer / Asistente", 1, production.prices.productionAssistant);
+  }
+
+  addPriceLine(
+    additions,
+    `Fotografías: ${quote.photos}`,
+    1,
+    production.prices.photos[quote.photos] ?? 0,
+  );
+  quote.extras.forEach((extra) => {
+    addPriceLine(additions, extra, 1, production.prices.extras[extra] ?? 0);
+  });
+
+  const additionsTotal = additions.reduce((total, item) => total + item.total, 0);
+  return {
+    additions,
+    additionsTotal,
+    basePrice: production.basePrice,
+    total: production.basePrice + additionsTotal,
+  };
+}
+
 export function changeQuoteQuantity(quote, field, requestedValue) {
   const production = getProductionType(quote.type);
   const minimums = {
@@ -47,11 +111,22 @@ export function changeQuoteQuantity(quote, field, requestedValue) {
     casting: 0,
     hours: getMinimumProductionHours(quote),
   };
+  const maximums = {
+    cameras: production.maximumCameras,
+    lights: production.maximumLights,
+    casting: production.maximumCasting,
+  };
   if (!(field in minimums)) {
     throw new Error(`Cantidad de cotización desconocida: ${field}`);
   }
 
-  const value = Math.max(minimums[field], Math.trunc(Number(requestedValue) || 0));
+  const normalizedValue = Math.max(
+    minimums[field],
+    Math.trunc(Number(requestedValue) || 0),
+  );
+  const value = field in maximums
+    ? Math.min(maximums[field], normalizedValue)
+    : normalizedValue;
   const nextQuote = { ...quote, [field]: value };
   if (field === "videos") {
     nextQuote.hours = Math.max(quote.hours, getMinimumProductionHours(nextQuote));
@@ -67,4 +142,16 @@ export function toggleQuoteExtra(quote, extra) {
       ? quote.extras.filter((item) => item !== extra)
       : [...quote.extras, extra],
   };
+}
+
+function addPriceLine(lines, label, requestedQuantity, unitPrice) {
+  const quantity = Math.max(0, Math.trunc(Number(requestedQuantity) || 0));
+  if (quantity === 0 || unitPrice <= 0) return;
+  lines.push({
+    id: `${label}-${lines.length}`,
+    label,
+    quantity,
+    unitPrice,
+    total: quantity * unitPrice,
+  });
 }

@@ -980,7 +980,117 @@ body {
   letter-spacing: -0.025em;
 }
 
+.quote-studio-preview {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.25rem;
+  background: #11100f;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+}
+
+.quote-studio-preview::after {
+  position: absolute;
+  z-index: 25;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.22), transparent 30%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.3), transparent 25%);
+  content: "";
+}
+
+.quote-studio-background,
+.quote-studio-layers {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.quote-studio-background {
+  z-index: 0;
+  object-fit: cover;
+}
+
+.quote-studio-layers {
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.quote-studio-layer {
+  position: absolute;
+  display: block;
+  height: auto;
+  transform: scaleX(var(--quote-layer-flip, 1));
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 0.65rem 0.75rem rgba(0, 0, 0, 0.36));
+  animation: quote-layer-enter 180ms ease-out both;
+}
+
+.quote-studio-layer.is-exiting {
+  animation: quote-layer-exit 180ms ease-in both;
+}
+
+.quote-studio-preview figcaption {
+  position: absolute;
+  z-index: 30;
+  top: 1rem;
+  left: 1rem;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.75rem;
+  background: rgba(7, 7, 7, 0.62);
+  box-shadow: 0 0.7rem 2rem rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(0.65rem);
+}
+
+.quote-studio-preview figcaption span {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.quote-studio-preview figcaption strong {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+@keyframes quote-layer-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.96) scaleX(var(--quote-layer-flip, 1));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) scaleX(var(--quote-layer-flip, 1));
+  }
+}
+
+@keyframes quote-layer-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1) scaleX(var(--quote-layer-flip, 1));
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(0.35rem) scale(0.96) scaleX(var(--quote-layer-flip, 1));
+  }
+}
+
 .format-badge {
+  text-align: center;
   padding: 0.55rem 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 999px;
@@ -1198,6 +1308,12 @@ body {
   margin-right: 0.45rem;
 }
 
+.option-chips button small {
+  margin-left: 0.45rem;
+  color: inherit;
+  opacity: 0.58;
+}
+
 .quote-summary {
   position: sticky;
   top: 5.75rem;
@@ -1225,6 +1341,62 @@ body {
 .quote-summary dd {
   margin: 0;
   text-align: right;
+}
+
+.quote-total {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 0.2rem 1rem;
+  margin: 1.35rem 0 0;
+  padding: 1.15rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.quote-total > span {
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.quote-total > strong {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 2.65rem;
+  font-weight: 600;
+  line-height: 0.9;
+}
+
+.quote-total > small {
+  color: rgba(255, 255, 255, 0.34);
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+}
+
+.quote-breakdown {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 0 1.3rem;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.quote-breakdown > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 0.75rem;
+}
+
+.quote-breakdown strong {
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 650;
+  white-space: nowrap;
 }
 
 .summary-extras span,
@@ -1603,6 +1775,16 @@ body {
     flex-direction: column;
   }
 
+  .quote-studio-preview {
+    border-radius: 1rem;
+  }
+
+  .quote-studio-preview figcaption {
+    top: 0.7rem;
+    left: 0.7rem;
+    padding: 0.5rem 0.65rem;
+  }
+
   .registration-form {
     grid-template-columns: 1fr;
   }
@@ -1847,5 +2029,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .phone-video-feed {
     scroll-behavior: auto;
+  }
+
+  .quote-studio-layer {
+    animation: none;
   }
 }

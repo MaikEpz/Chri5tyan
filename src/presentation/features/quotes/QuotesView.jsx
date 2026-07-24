@@ -18,8 +18,8 @@ export function QuotesView({ onNavigate }) {
         value={productionType}
         onChange={setProductionType}
         items={[
-          [PRODUCTION_TYPE.REEL, "Reel"],
-          [PRODUCTION_TYPE.SPOT, "Spot publicitario"],
+          [PRODUCTION_TYPE.REEL, "Reel vertical"],
+          [PRODUCTION_TYPE.SPOT, "Spot horizontal"],
           [PRODUCTION_TYPE.CINEMA, "Producción cine"],
         ]}
       />

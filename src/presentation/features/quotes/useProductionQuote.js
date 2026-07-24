@@ -1,6 +1,7 @@
 import { useMemo, useReducer } from "react";
 import { productionQuoteReducer, quoteAction } from "../../../application/production/productionQuoteReducer.js";
 import {
+  calculateProductionQuote,
   createProductionQuote,
   getMinimumProductionHours,
   hasProductionAssistant,
@@ -14,10 +15,12 @@ export function useProductionQuote(type) {
     createProductionQuote,
   );
   const production = useMemo(() => getProductionType(quote.type), [quote.type]);
+  const pricing = useMemo(() => calculateProductionQuote(quote), [quote]);
 
   return {
     quote,
     production,
+    pricing,
     minimumHours: getMinimumProductionHours(quote),
     hasAssistant: hasProductionAssistant(quote),
     setQuantity: (field, value) => dispatch(quoteAction.setQuantity(field, value)),

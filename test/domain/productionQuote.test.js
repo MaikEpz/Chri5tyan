@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  calculateProductionQuote,
   changeQuoteQuantity,
   createProductionQuote,
   getMinimumProductionHours,
@@ -41,6 +42,14 @@ test("ninguna cantidad puede bajar de su mínimo", () => {
   assert.equal(changeQuoteQuantity(quote, "hours", 0).hours, 3);
 });
 
+test("los recursos físicos respetan máximos de cámaras, luces y casting", () => {
+  const quote = createProductionQuote(PRODUCTION_TYPE.REEL);
+
+  assert.equal(changeQuoteQuantity(quote, "cameras", 99).cameras, 4);
+  assert.equal(changeQuoteQuantity(quote, "lights", 99).lights, 6);
+  assert.equal(changeQuoteQuantity(quote, "casting", 99).casting, 4);
+});
+
 test("los extras se agregan y eliminan sin mutar la cotización", () => {
   const quote = createProductionQuote(PRODUCTION_TYPE.REEL);
   const withDrone = toggleQuoteExtra(quote, "Drone");
@@ -48,4 +57,40 @@ test("los extras se agregan y eliminan sin mutar la cotización", () => {
   assert.deepEqual(quote.extras, []);
   assert.deepEqual(withDrone.extras, ["Drone"]);
   assert.deepEqual(withoutDrone.extras, []);
+});
+
+test("los paquetes base cuestan 80 y 250 dólares", () => {
+  const reel = calculateProductionQuote(createProductionQuote(PRODUCTION_TYPE.REEL));
+  const spot = calculateProductionQuote(createProductionQuote(PRODUCTION_TYPE.SPOT));
+
+  assert.equal(reel.total, 80);
+  assert.equal(spot.total, 250);
+  assert.deepEqual(reel.additions, []);
+  assert.deepEqual(spot.additions, []);
+});
+
+test("cada recurso adicional aumenta el total del reel", () => {
+  let quote = createProductionQuote(PRODUCTION_TYPE.REEL);
+  quote = changeQuoteQuantity(quote, "cameras", 2);
+  quote = changeQuoteQuantity(quote, "lights", 3);
+  quote = changeQuoteQuantity(quote, "casting", 1);
+  quote = { ...quote, makeup: true, professionalSound: true, photos: "0 a 5" };
+  quote = toggleQuoteExtra(quote, "Drone");
+
+  const pricing = calculateProductionQuote(quote);
+
+  assert.equal(pricing.total, 385);
+  assert.equal(pricing.additionsTotal, 305);
+});
+
+test("un video horizontal adicional cobra edición y horas requeridas", () => {
+  const quote = changeQuoteQuantity(
+    createProductionQuote(PRODUCTION_TYPE.SPOT),
+    "videos",
+    2,
+  );
+  const pricing = calculateProductionQuote(quote);
+
+  assert.equal(quote.hours, 5);
+  assert.equal(pricing.total, 420);
 });
