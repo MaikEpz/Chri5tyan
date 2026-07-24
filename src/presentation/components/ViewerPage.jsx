@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  FULLSCREEN_SUGGESTION_KEY,
   shouldShowFullscreenButton,
   shouldShowFullscreenSuggestion,
 } from "../fullscreenUi.js";
@@ -12,50 +11,44 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
   const fullscreen = useFullscreenMode();
   const monitor = useMonitorExperience();
   const [worldReady, setWorldReady] = useState(false);
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false);
   const [isMobile, setIsMobile] = useState(() => (
     window.matchMedia("(pointer: coarse), (max-width: 768px)").matches
   ));
-  const [suggestionDismissed, setSuggestionDismissed] = useState(() => {
-    try {
-      return window.sessionStorage.getItem(FULLSCREEN_SUGGESTION_KEY) === "true";
-    } catch {
-      return false;
-    }
-  });
   const handleWorldReady = useCallback(() => setWorldReady(true), []);
 
   useEffect(() => {
     const mobileQuery = window.matchMedia("(pointer: coarse), (max-width: 768px)");
     const handleMobileChange = () => setIsMobile(mobileQuery.matches);
+
     handleMobileChange();
     mobileQuery.addEventListener("change", handleMobileChange);
     return () => mobileQuery.removeEventListener("change", handleMobileChange);
   }, []);
 
+  useEffect(() => {
+    if (fullscreen.isFullscreen) {
+      setSuggestionDismissed(true);
+    }
+  }, [fullscreen.isFullscreen]);
+
   const dismissFullscreenSuggestion = useCallback(() => {
     setSuggestionDismissed(true);
-    try {
-      window.sessionStorage.setItem(FULLSCREEN_SUGGESTION_KEY, "true");
-    } catch {
-      // La sugerencia puede descartarse aunque el almacenamiento esté deshabilitado.
-    }
   }, []);
 
-  const acceptFullscreenSuggestion = useCallback(async () => {
-    dismissFullscreenSuggestion();
-    await fullscreen.toggle();
-  }, [dismissFullscreenSuggestion, fullscreen.toggle]);
+  const acceptFullscreenSuggestion = useCallback(() => {
+    setSuggestionDismissed(true);
+    void fullscreen.toggle();
+  }, [fullscreen.toggle]);
 
   const showFullscreenSuggestion = shouldShowFullscreenSuggestion({
     isFullscreen: fullscreen.isFullscreen,
     isMobile,
-    isSupported: fullscreen.isSupported,
     monitorOpen: monitor.open,
     suggestionDismissed,
-    worldReady
+    worldReady,
   });
   const showFullscreenButton = shouldShowFullscreenButton({
-    isSupported: fullscreen.isSupported,
     monitorOpen: monitor.open,
   });
 
@@ -68,7 +61,7 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
         monitorContentVisible={monitor.contentVisible}
         onActiveMonitorViewChange={monitor.setActiveView}
         onMonitorClose={monitor.requestClose}
-        onMonitorOpen={monitor.open}
+        onMonitorOpen={monitor.openMonitor}
         onMonitorReady={monitor.markReady}
         onWorldReady={handleWorldReady}
       />
@@ -93,56 +86,36 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
           onToggle={fullscreen.toggle}
         />
       )}
-      {fullscreen.error && !monitor.open && (
-        <FullscreenError
-          message={fullscreen.error}
-          onDismiss={fullscreen.clearError}
-        />
-      )}
     </main>
-  );
-}
-
-function FullscreenError({ message, onDismiss }) {
-  return (
-    <div className="fullscreen-error" role="status">
-      <span>{message}</span>
-      <button type="button" aria-label="Cerrar aviso" onClick={onDismiss}>×</button>
-    </div>
   );
 }
 
 function FullscreenSuggestion({ onAccept, onDismiss }) {
   return (
-    <aside
+    <section
       className="fullscreen-suggestion"
+      role="dialog"
+      aria-modal="true"
       aria-labelledby="fullscreen-suggestion-title"
       aria-describedby="fullscreen-suggestion-description"
     >
-      <div className="fullscreen-suggestion-icon" aria-hidden="true">⛶</div>
-      <div className="fullscreen-suggestion-copy">
-        <strong id="fullscreen-suggestion-title">Una mejor vista</strong>
+      <div className="fullscreen-suggestion-content">
+        <span className="fullscreen-suggestion-icon" aria-hidden="true">⛶</span>
+        <p className="fullscreen-suggestion-eyebrow">Experiencia inmersiva</p>
+        <h1 id="fullscreen-suggestion-title">¿Activar pantalla completa?</h1>
         <p id="fullscreen-suggestion-description">
-          Activa la pantalla completa para explorar el mundo con más espacio.
+          Disfruta el mundo 3D usando todo el espacio disponible en tu pantalla.
         </p>
+        <div className="fullscreen-suggestion-actions">
+          <button type="button" className="fullscreen-suggestion-primary" onClick={onAccept}>
+            Activar pantalla completa
+          </button>
+          <button type="button" className="fullscreen-suggestion-secondary" onClick={onDismiss}>
+            Continuar sin activar
+          </button>
+        </div>
       </div>
-      <div className="fullscreen-suggestion-actions">
-        <button
-          className="fullscreen-suggestion-primary"
-          type="button"
-          onClick={onAccept}
-        >
-          Activar
-        </button>
-        <button
-          className="fullscreen-suggestion-secondary"
-          type="button"
-          onClick={onDismiss}
-        >
-          Ahora no
-        </button>
-      </div>
-    </aside>
+    </section>
   );
 }
 

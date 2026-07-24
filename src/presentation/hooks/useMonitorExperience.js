@@ -30,7 +30,7 @@ export function useMonitorExperience() {
     });
   }, [finishClose, state.ready]);
 
-  const open = useCallback((source = "desktop") => {
+  const openMonitor = useCallback((source = "desktop") => {
     setState({
       ...INITIAL_MONITOR_STATE,
       open: true,
@@ -55,7 +55,7 @@ export function useMonitorExperience() {
     cameraResetKey,
     finishClose,
     markReady,
-    open,
+    openMonitor,
     requestClose,
     setActiveView,
     showContent,

@@ -5,44 +5,37 @@ import {
   shouldShowFullscreenSuggestion,
 } from "../../src/presentation/fullscreenUi.js";
 
-test("la sugerencia no sustituye el botón de pantalla completa", () => {
-  const state = {
-    isFullscreen: false,
-    isMobile: true,
-    isSupported: true,
-    monitorOpen: false,
-    suggestionDismissed: false,
-    worldReady: true,
-  };
+const READY_MOBILE_STATE = {
+  isFullscreen: false,
+  isMobile: true,
+  monitorOpen: false,
+  suggestionDismissed: false,
+  worldReady: true,
+};
 
-  assert.equal(shouldShowFullscreenSuggestion(state), true);
-  assert.equal(shouldShowFullscreenButton(state), true);
+test("muestra la sugerencia móvil cuando el mundo está listo", () => {
+  assert.equal(shouldShowFullscreenSuggestion(READY_MOBILE_STATE), true);
 });
 
-test("descartar la sugerencia conserva el botón", () => {
-  const state = {
-    isFullscreen: false,
-    isMobile: true,
-    isSupported: true,
-    monitorOpen: false,
+test("oculta la sugerencia después de cualquier decisión", () => {
+  assert.equal(shouldShowFullscreenSuggestion({
+    ...READY_MOBILE_STATE,
     suggestionDismissed: true,
-    worldReady: true,
-  };
-
-  assert.equal(shouldShowFullscreenSuggestion(state), false);
-  assert.equal(shouldShowFullscreenButton(state), true);
+  }), false);
 });
 
-test("abrir el monitor oculta temporalmente ambos controles", () => {
-  const state = {
-    isFullscreen: false,
-    isMobile: true,
-    isSupported: true,
+test("no muestra la sugerencia en escritorio ni dentro del monitor", () => {
+  assert.equal(shouldShowFullscreenSuggestion({
+    ...READY_MOBILE_STATE,
+    isMobile: false,
+  }), false);
+  assert.equal(shouldShowFullscreenSuggestion({
+    ...READY_MOBILE_STATE,
     monitorOpen: true,
-    suggestionDismissed: false,
-    worldReady: true,
-  };
+  }), false);
+});
 
-  assert.equal(shouldShowFullscreenSuggestion(state), false);
-  assert.equal(shouldShowFullscreenButton(state), false);
+test("el botón solo se oculta mientras el monitor está abierto", () => {
+  assert.equal(shouldShowFullscreenButton({ monitorOpen: false }), true);
+  assert.equal(shouldShowFullscreenButton({ monitorOpen: true }), false);
 });

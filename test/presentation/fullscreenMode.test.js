@@ -2,50 +2,54 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { getFullscreenApi } from "../../src/presentation/hooks/useFullscreenMode.js";
 
-test("detecta y ejecuta la API estándar de pantalla completa", async () => {
-  let entered = false;
-  let exited = false;
+test("detecta la API estándar sin depender de fullscreenEnabled", async () => {
+  let requestedOptions = null;
   const documentRef = {
     documentElement: {
-      requestFullscreen: async () => {
-        entered = true;
+      requestFullscreen: async (options) => {
+        requestedOptions = options;
       },
     },
-    exitFullscreen: async () => {
-      exited = true;
-    },
+    exitFullscreen: async () => {},
+    fullscreenEnabled: false,
     fullscreenElement: null,
   };
+
   const api = getFullscreenApi(documentRef);
 
+  assert.equal(typeof api.request, "function");
+  assert.equal(typeof api.exit, "function");
   await api.request({ navigationUI: "hide" });
-  await api.exit();
-
-  assert.equal(entered, true);
-  assert.equal(exited, true);
+  assert.deepEqual(requestedOptions, { navigationUI: "hide" });
 });
 
-test("conserva compatibilidad con la API WebKit", async () => {
-  let entered = false;
+test("usa la variante WebKit cuando la API estándar no existe", async () => {
+  let requested = false;
   let exited = false;
-  const fullscreenElement = {};
   const documentRef = {
     documentElement: {
       webkitRequestFullscreen: async () => {
-        entered = true;
+        requested = true;
       },
     },
     webkitExitFullscreen: async () => {
       exited = true;
     },
-    webkitFullscreenElement: fullscreenElement,
+    webkitFullscreenElement: null,
   };
+
   const api = getFullscreenApi(documentRef);
 
   await api.request();
   await api.exit();
-
-  assert.equal(api.getElement(), fullscreenElement);
-  assert.equal(entered, true);
+  assert.equal(requested, true);
   assert.equal(exited, true);
+});
+
+test("informa que la API no existe sin impedir que la interfaz muestre el botón", () => {
+  const api = getFullscreenApi({ documentElement: {} });
+
+  assert.equal(api.request, null);
+  assert.equal(api.exit, null);
+  assert.equal(api.getElement(), null);
 });
