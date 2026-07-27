@@ -17,6 +17,12 @@ import teleprompter from "../../../assets/quotes/studio/teleprompter.webp";
 import { PRODUCTION_TYPE } from "../../../domain/production/productionTypes.js";
 import { describeQuoteScene, getQuoteSceneLayers } from "./quoteScene.js";
 
+const USD_FORMATTER = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+
 const ASSETS = Object.freeze({
   camera: cinemaCamera,
   softbox: softboxLight,
@@ -146,7 +152,7 @@ function useAnimatedLayers(activeLayers) {
   return renderedLayers;
 }
 
-export function QuoteStudioPreview({ quote, production }) {
+export function QuoteStudioPreview({ quote, production, total }) {
   const isVertical = production.id === PRODUCTION_TYPE.REEL;
   const composition = isVertical
     ? VERTICAL_COMPOSITION
@@ -170,9 +176,9 @@ export function QuoteStudioPreview({ quote, production }) {
         decoding="async"
         loading="eager"
       />
-      <figcaption>
-        <span>Set en tiempo real</span>
-        <strong>{production.format}</strong>
+      <figcaption aria-atomic="true" aria-live="polite">
+        <span>{production.name} · {production.format}</span>
+        <strong>{USD_FORMATTER.format(total)}</strong>
       </figcaption>
       <div className="quote-studio-layers" aria-hidden="true">
         {layers.map((layer) => (

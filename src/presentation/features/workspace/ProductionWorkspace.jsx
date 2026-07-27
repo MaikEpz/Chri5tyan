@@ -1,6 +1,4 @@
 import { useState } from "react";
-import "@fontsource/cormorant-garamond/latin-500.css";
-import "@fontsource/cormorant-garamond/latin-600.css";
 import chrisLogoUrl from "../../../assets/branding/chris-logo.svg";
 import { CastingView } from "../casting/CastingView.jsx";
 import { EquipmentView } from "../equipment/EquipmentView.jsx";
@@ -14,7 +12,7 @@ const WORKSPACE_SECTIONS = Object.freeze([
   { id: "equipment", label: "Equipos" },
 ]);
 
-export function ProductionWorkspace({ onBack }) {
+export function ProductionWorkspace({ exportProductionQuoteUseCase, onBack }) {
   const [activeSection, setActiveSection] = useState(WORKSPACE_SECTIONS[0].id);
 
   return (
@@ -41,7 +39,12 @@ export function ProductionWorkspace({ onBack }) {
         </nav>
       </header>
       <main className="workspace-main">
-        {activeSection === "quotes" && <QuotesView onNavigate={setActiveSection} />}
+        {activeSection === "quotes" && (
+          <QuotesView
+            exportProductionQuoteUseCase={exportProductionQuoteUseCase}
+            onNavigate={setActiveSection}
+          />
+        )}
         {activeSection === "casting" && <CastingView />}
         {activeSection === "locations" && <LocationsView />}
         {activeSection === "equipment" && <EquipmentView />}

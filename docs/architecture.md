@@ -40,6 +40,15 @@ Cada funcionalidad puede crecer con sus propios componentes, hooks y adaptadores
 
 Los precios, persistencia o una API futura deben entrar como puertos/casos de uso; nunca dentro de los componentes.
 
+## Exportación de la cotización
+
+La interfaz solicita la exportación mediante `ExportProductionQuoteUseCase`. Este caso de uso
+depende del puerto `QuotePdfExporter`, mientras que `JsPdfQuoteExporter` implementa el puerto
+en infraestructura. `main.jsx` conecta ambos y entrega el caso de uso a la presentación.
+
+De esta forma, React no conoce jsPDF y el generador puede cambiarse sin modificar componentes
+ni reglas de cotización.
+
 ## Criterios para nuevas funcionalidades
 
 - Una regla de negocio nueva empieza en `domain`.

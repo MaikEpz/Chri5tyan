@@ -7,7 +7,11 @@ import { useFullscreenMode } from "../hooks/useFullscreenMode.js";
 import { useMonitorExperience } from "../hooks/useMonitorExperience.js";
 import { FullscreenMonitor } from "./monitor/FullscreenMonitor.jsx";
 
-export function ViewerPage({ modelAsset, ViewportComponent }) {
+export function ViewerPage({
+  exportProductionQuoteUseCase,
+  modelAsset,
+  ViewportComponent,
+}) {
   const fullscreen = useFullscreenMode();
   const monitor = useMonitorExperience();
   const [worldReady, setWorldReady] = useState(false);
@@ -66,6 +70,7 @@ export function ViewerPage({ modelAsset, ViewportComponent }) {
         onWorldReady={handleWorldReady}
       />
       <FullscreenMonitor
+        exportProductionQuoteUseCase={exportProductionQuoteUseCase}
         isClosing={monitor.closing}
         isVisible={monitor.open && monitor.ready}
         origin={monitor.origin}

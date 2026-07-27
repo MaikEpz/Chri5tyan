@@ -1,4 +1,5 @@
 import {
+  changeQuoteOption,
   changeQuoteQuantity,
   createProductionQuote,
   toggleQuoteExtra,
@@ -16,7 +17,7 @@ export function productionQuoteReducer(state, action) {
     case "quantity/set":
       return changeQuoteQuantity(state, action.field, action.value);
     case "option/set":
-      return { ...state, [action.field]: action.value };
+      return changeQuoteOption(state, action.field, action.value);
     case "extra/toggle":
       return toggleQuoteExtra(state, action.extra);
     case "quote/reset":

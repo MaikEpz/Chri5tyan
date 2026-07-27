@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   calculateProductionQuote,
+  changeQuoteOption,
   changeQuoteQuantity,
   createProductionQuote,
   getMinimumProductionHours,
@@ -57,6 +58,25 @@ test("los extras se agregan y eliminan sin mutar la cotización", () => {
   assert.deepEqual(quote.extras, []);
   assert.deepEqual(withDrone.extras, ["Drone"]);
   assert.deepEqual(withoutDrone.extras, []);
+});
+
+test("las opciones solo aceptan campos y valores conocidos", () => {
+  const quote = createProductionQuote(PRODUCTION_TYPE.REEL);
+
+  assert.equal(changeQuoteOption(quote, "makeup", true).makeup, true);
+  assert.equal(changeQuoteOption(quote, "photos", "0 a 5").photos, "0 a 5");
+  assert.throws(
+    () => changeQuoteOption(quote, "makeup", "sí"),
+    /debe ser booleana/,
+  );
+  assert.throws(
+    () => changeQuoteOption(quote, "photos", "Paquete inventado"),
+    /Paquete de fotografías desconocido/,
+  );
+  assert.throws(
+    () => changeQuoteOption(quote, "type", PRODUCTION_TYPE.SPOT),
+    /Opción de cotización desconocida/,
+  );
 });
 
 test("los paquetes base cuestan 80 y 250 dólares", () => {

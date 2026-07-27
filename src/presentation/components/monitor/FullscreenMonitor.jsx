@@ -14,6 +14,7 @@ const PHONE_EXIT_DURATION_MS = 720;
 const EXIT_COMPLETION_GRACE_MS = 80;
 
 export function FullscreenMonitor({
+  exportProductionQuoteUseCase,
   isClosing = false,
   isVisible = false,
   origin = null,
@@ -59,7 +60,7 @@ export function FullscreenMonitor({
 
   return (
     <section
-      className={`monitor-immersive-shell${source === "phone" ? " is-phone-source" : ""}${isClosing ? " is-closing" : ""}${logoReturning ? " is-logo-returning" : ""}`}
+      className={`monitor-immersive-shell${source === "phone" ? " is-phone-source" : ""}${isClosing ? " is-closing" : ""}${logoReturning ? " is-logo-returning" : ""}${logoHiding && !logoReturning ? " is-content-visible" : ""}`}
       aria-label="Pantalla interactiva de Chris"
       onAnimationEnd={(event) => {
         if (event.target !== event.currentTarget) return;
@@ -83,7 +84,10 @@ export function FullscreenMonitor({
     >
       <div className={`monitor-app${contentStateClass}`}>
         <Suspense fallback={null}>
-          <ActiveWorkspace onBack={() => setLogoReturning(true)} />
+          <ActiveWorkspace
+            exportProductionQuoteUseCase={exportProductionQuoteUseCase}
+            onBack={() => setLogoReturning(true)}
+          />
         </Suspense>
       </div>
       <div

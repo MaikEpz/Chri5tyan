@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import "@fontsource/cormorant-garamond/latin-500.css";
-import "@fontsource/cormorant-garamond/latin-600.css";
 import { PRODUCTION_REFERENCES } from "../../../domain/production/productionReferences.js";
 import { getPortfolioImage } from "./portfolioImages.js";
 import { getPortfolioVideo } from "./portfolioVideos.js";

@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   PHOTO_PACKAGES,
   QUOTE_EXTRA,
@@ -26,7 +27,11 @@ function additionalPrice(value, suffix = "") {
   return `+${formatUsd(value)}${suffix ? ` ${suffix}` : ""}`;
 }
 
-export function QuoteConfigurator({ type, onNavigate }) {
+export function QuoteConfigurator({
+  exportProductionQuoteUseCase,
+  type,
+  onNavigate,
+}) {
   const {
     quote,
     production,
@@ -47,7 +52,11 @@ export function QuoteConfigurator({ type, onNavigate }) {
             {production.format} · Base {formatUsd(production.basePrice)}
           </span>
         </section>
-        <QuoteStudioPreview quote={quote} production={production} />
+        <QuoteStudioPreview
+          quote={quote}
+          production={production}
+          total={pricing.total}
+        />
         <div className="config-grid">
           <ConfigSection title="Equipo técnico" index="01">
             <QuantityControl
@@ -162,14 +171,77 @@ export function QuoteConfigurator({ type, onNavigate }) {
         </section>
       </div>
 
-      <QuoteSummary quote={quote} production={production} pricing={pricing} />
+      <QuoteSummary
+        exportProductionQuoteUseCase={exportProductionQuoteUseCase}
+        quote={quote}
+        production={production}
+        pricing={pricing}
+      />
     </div>
   );
 }
 
-function QuoteSummary({ quote, production, pricing }) {
+function QuoteSummary({
+  exportProductionQuoteUseCase,
+  quote,
+  production,
+  pricing,
+}) {
+  const summaryRef = useRef(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState("");
+
+  useLayoutEffect(() => {
+    const summary = summaryRef.current;
+    if (!summary) return undefined;
+
+    const updateScale = () => {
+      if (window.innerWidth <= 900) {
+        summary.style.setProperty("--quote-summary-scale", "1");
+        summary.style.removeProperty("--quote-summary-available-height");
+        return;
+      }
+
+      const stickyTop = Number.parseFloat(window.getComputedStyle(summary).top) || 0;
+      const availableHeight = window.innerHeight - stickyTop - 12;
+      summary.style.setProperty(
+        "--quote-summary-available-height",
+        `${availableHeight}px`,
+      );
+      const naturalHeight = summary.offsetHeight;
+      const scale = naturalHeight > 0
+        ? Math.min(1, Math.max(0.68, availableHeight / naturalHeight))
+        : 1;
+
+      summary.style.setProperty("--quote-summary-scale", scale.toFixed(4));
+    };
+
+    const resizeObserver = new ResizeObserver(updateScale);
+    resizeObserver.observe(summary);
+    window.addEventListener("resize", updateScale);
+    updateScale();
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateScale);
+    };
+  }, []);
+
+  const handleDownloadPdf = async () => {
+    setIsGeneratingPdf(true);
+    setPdfError("");
+    try {
+      await exportProductionQuoteUseCase.execute({ quote, production, pricing });
+    } catch (error) {
+      console.error("No se pudo generar la cotización en PDF.", error);
+      setPdfError("No se pudo generar el PDF. Inténtalo nuevamente.");
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   return (
-    <aside className="quote-summary">
+    <aside ref={summaryRef} className="quote-summary">
       <span className="config-kicker">Resumen</span>
       <h2>{production.name}</h2>
       <div className="quote-total" aria-live="polite">
@@ -204,9 +276,18 @@ function QuoteSummary({ quote, production, pricing }) {
           </div>
         ))}
       </div>
-      <button className="primary-action" type="button">
-        Continuar · {formatUsd(pricing.total)}
+      <button
+        className="primary-action"
+        type="button"
+        aria-busy={isGeneratingPdf}
+        disabled={isGeneratingPdf}
+        onClick={handleDownloadPdf}
+      >
+        {isGeneratingPdf
+          ? "Generando PDF…"
+          : `Continuar · ${formatUsd(pricing.total)}`}
       </button>
+      {pdfError && <small className="quote-pdf-error" role="alert">{pdfError}</small>}
       <small>Estimación interactiva en dólares estadounidenses. El valor final puede ajustarse según locación y requerimientos especiales.</small>
     </aside>
   );

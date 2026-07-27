@@ -144,6 +144,24 @@ export function toggleQuoteExtra(quote, extra) {
   };
 }
 
+export function changeQuoteOption(quote, field, requestedValue) {
+  if (field === "makeup" || field === "professionalSound") {
+    if (typeof requestedValue !== "boolean") {
+      throw new TypeError(`La opción ${field} debe ser booleana.`);
+    }
+    return { ...quote, [field]: requestedValue };
+  }
+
+  if (field === "photos") {
+    if (!PHOTO_PACKAGES.includes(requestedValue)) {
+      throw new RangeError(`Paquete de fotografías desconocido: ${requestedValue}`);
+    }
+    return { ...quote, photos: requestedValue };
+  }
+
+  throw new Error(`Opción de cotización desconocida: ${field}`);
+}
+
 function addPriceLine(lines, label, requestedQuantity, unitPrice) {
   const quantity = Math.max(0, Math.trunc(Number(requestedQuantity) || 0));
   if (quantity === 0 || unitPrice <= 0) return;

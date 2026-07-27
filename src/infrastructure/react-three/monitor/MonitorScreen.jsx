@@ -427,7 +427,7 @@ function ScreenCta({
 
     const pulse = Math.sin(time * 1.15);
     const scale = 1 + pulse * 0.045;
-    materialRef.current.opacity = 0.62 + pulse * 0.2;
+    materialRef.current.opacity = 0.1;
     groupRef.current?.scale.set(normalDirection * scale, scale, 1);
   });
 
@@ -462,7 +462,7 @@ function drawCta(surface, color, label) {
   const { canvas, context, texture } = surface;
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.fillStyle = color;
-  context.font = "700 46px Inter, Arial, sans-serif";
+  context.font = "700 40px Inter, Arial, sans-serif";
   context.letterSpacing = "4px";
   context.textAlign = "center";
   context.textBaseline = "middle";

@@ -3,7 +3,7 @@ import { PRODUCTION_TYPE } from "../../../domain/production/productionTypes.js";
 import { Tabs, ViewIntro } from "../workspace/WorkspaceUi.jsx";
 import { QuoteConfigurator } from "./QuoteConfigurator.jsx";
 
-export function QuotesView({ onNavigate }) {
+export function QuotesView({ exportProductionQuoteUseCase, onNavigate }) {
   const [productionType, setProductionType] = useState(PRODUCTION_TYPE.REEL);
 
   return (
@@ -27,6 +27,7 @@ export function QuotesView({ onNavigate }) {
         <CinemaContact />
       ) : (
         <QuoteConfigurator
+          exportProductionQuoteUseCase={exportProductionQuoteUseCase}
           key={productionType}
           type={productionType}
           onNavigate={onNavigate}

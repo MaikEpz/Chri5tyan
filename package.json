@@ -11,9 +11,10 @@
     "start": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
-    "@fontsource/cormorant-garamond": "^5.3.0",
+    "@fontsource/poppins": "^5.3.0",
     "@react-three/drei": "latest",
     "@react-three/fiber": "latest",
+    "jspdf": "^4.2.1",
     "react": "latest",
     "react-dom": "latest",
     "three": "0.182.0",
