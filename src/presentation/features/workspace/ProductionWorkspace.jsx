@@ -31,9 +31,11 @@ export function ProductionWorkspace({
   exportProductionQuoteUseCase,
   onBack,
 }) {
+  const workspaceRef = useRef(null);
   const [activeSection, setActiveSection] = useState(WORKSPACE_SECTIONS[0].id);
   const [session, setSession] = useState(() => authSessionService.getSession());
   const [authOpen, setAuthOpen] = useState(false);
+  const [headerHidden, setHeaderHidden] = useState(false);
   const pendingAction = useRef(null);
   const isAdmin = session?.user?.role === "ADMIN";
   const availableSections = isAdmin
@@ -48,6 +50,65 @@ export function ProductionWorkspace({
     if (isAdmin) setActiveSection("admin");
     else setActiveSection((current) => (current === "admin" ? "quotes" : current));
   }, [isAdmin]);
+  useEffect(() => {
+    const workspace = workspaceRef.current;
+    const scrollContainer = workspace?.closest(".monitor-app");
+    const mobileQuery = window.matchMedia?.("(max-width: 900px)");
+    if (!scrollContainer || !mobileQuery) return undefined;
+
+    let hidden = false;
+    let directionAnchor = scrollContainer.scrollTop;
+    const showHeader = () => {
+      hidden = false;
+      setHeaderHidden(false);
+    };
+    const handleScroll = () => {
+      if (!mobileQuery.matches) {
+        directionAnchor = scrollContainer.scrollTop;
+        showHeader();
+        return;
+      }
+
+      const current = Math.max(0, scrollContainer.scrollTop);
+      if (current <= 12) {
+        directionAnchor = current;
+        showHeader();
+        return;
+      }
+
+      if (hidden) {
+        directionAnchor = Math.max(directionAnchor, current);
+        if (current <= directionAnchor - 12) {
+          hidden = false;
+          directionAnchor = current;
+          setHeaderHidden(false);
+        }
+        return;
+      }
+
+      directionAnchor = Math.min(directionAnchor, current);
+      if (current >= 80 && current >= directionAnchor + 24) {
+        hidden = true;
+        directionAnchor = current;
+        setHeaderHidden(true);
+      }
+    };
+    const handleViewportChange = () => {
+      directionAnchor = scrollContainer.scrollTop;
+      if (!mobileQuery.matches) showHeader();
+    };
+
+    scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
+    mobileQuery.addEventListener?.("change", handleViewportChange);
+    return () => {
+      scrollContainer.removeEventListener("scroll", handleScroll);
+      mobileQuery.removeEventListener?.("change", handleViewportChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (authOpen) setHeaderHidden(false);
+  }, [authOpen]);
 
   const runProtected = useCallback((action) => {
     if (session?.user) return Promise.resolve().then(action);
@@ -77,8 +138,11 @@ export function ProductionWorkspace({
   };
 
   return (
-    <div className="production-workspace">
-      <header className="workspace-header">
+    <div
+      ref={workspaceRef}
+      className={`production-workspace${headerHidden ? " is-header-hidden" : ""}`}
+    >
+      <header className="workspace-header" inert={headerHidden || undefined}>
         <button className="workspace-back" type="button" onClick={onBack}>
           <span className="workspace-back-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24">

@@ -1180,10 +1180,22 @@
     --workspace-sticky-offset: 8.25rem;
   }
 
+  .production-workspace.is-header-hidden {
+    --workspace-sticky-offset: 0.75rem;
+  }
+
   .workspace-header {
     grid-template-columns: 1fr auto;
     gap: 0.4rem 1rem;
     padding: 0.75rem 1rem 0.55rem;
+    transition: transform 220ms ease, visibility 0s;
+    will-change: transform;
+  }
+
+  .production-workspace.is-header-hidden .workspace-header {
+    visibility: hidden;
+    transform: translateY(calc(-100% - 1px));
+    transition: transform 220ms ease, visibility 0s linear 220ms;
   }
 
   .workspace-brand {
@@ -1230,6 +1242,7 @@
     top: var(--workspace-sticky-offset);
     max-height: calc(100dvh - var(--workspace-sticky-offset));
     background: transparent;
+    transition: top 220ms ease;
   }
 
   .quote-content-column {
@@ -1243,6 +1256,14 @@
 
   .quote-visual-column > .quote-studio-preview {
     width: 100%;
+  }
+}
+
+@media (max-width: 900px) and (prefers-reduced-motion: reduce) {
+  .workspace-header,
+  .production-workspace.is-header-hidden .workspace-header,
+  .quote-visual-column {
+    transition-duration: 0.01ms;
   }
 }
 
