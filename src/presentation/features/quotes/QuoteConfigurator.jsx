@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   PHOTO_PACKAGES,
   QUOTE_EXTRA,
@@ -10,6 +11,7 @@ import {
   ToggleControl,
 } from "./QuoteControls.jsx";
 import { QuoteStudioPreview } from "./QuoteStudioPreview.jsx";
+import { QuoteResourceExplorer } from "./QuoteResourceExplorer.jsx";
 import { useProductionQuote } from "./useProductionQuote.js";
 
 const AVAILABLE_EXTRAS = Object.freeze(Object.values(QUOTE_EXTRA));
@@ -27,10 +29,117 @@ function additionalPrice(value, suffix = "") {
   return `+${formatUsd(value)}${suffix ? ` ${suffix}` : ""}`;
 }
 
+function useQuoteStickyViewportEffects({ contentRef, isDesktop, visualRef }) {
+  useLayoutEffect(() => {
+    const visual = visualRef.current;
+    const content = contentRef.current;
+    if (!visual || !content) return undefined;
+
+    const scrollContainer = visual.closest(".monitor-app");
+    let animationFrame = 0;
+
+    const updateClip = () => {
+      animationFrame = 0;
+      if (isDesktop) {
+        content.style.removeProperty("--quote-mobile-clip-top");
+        return;
+      }
+
+      const visualRect = visual.getBoundingClientRect();
+      const contentRect = content.getBoundingClientRect();
+      const clipTop = Math.min(
+        contentRect.height,
+        Math.max(0, visualRect.bottom - contentRect.top),
+      );
+      content.style.setProperty("--quote-mobile-clip-top", `${clipTop}px`);
+    };
+
+    const scheduleClipUpdate = () => {
+      if (animationFrame) return;
+      animationFrame = window.requestAnimationFrame(updateClip);
+    };
+
+    const resizeObserver = typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(scheduleClipUpdate);
+    resizeObserver?.observe(visual);
+    resizeObserver?.observe(content);
+    scrollContainer?.addEventListener("scroll", scheduleClipUpdate, { passive: true });
+    window.addEventListener("resize", scheduleClipUpdate);
+    updateClip();
+
+    return () => {
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
+      resizeObserver?.disconnect();
+      scrollContainer?.removeEventListener("scroll", scheduleClipUpdate);
+      window.removeEventListener("resize", scheduleClipUpdate);
+      content.style.removeProperty("--quote-mobile-clip-top");
+    };
+  }, [contentRef, isDesktop, visualRef]);
+}
+
+function useDesktopQuoteVisualPortal(visualRef) {
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth > 900);
+  const [portalTarget, setPortalTarget] = useState(null);
+  const placeholderRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      const updateDesktopMode = () => setIsDesktop(window.innerWidth > 900);
+      window.addEventListener("resize", updateDesktopMode);
+      updateDesktopMode();
+      return () => window.removeEventListener("resize", updateDesktopMode);
+    }
+
+    const mediaQuery = window.matchMedia("(min-width: 901px)");
+    const updateDesktopMode = () => setIsDesktop(mediaQuery.matches);
+    mediaQuery.addEventListener("change", updateDesktopMode);
+    updateDesktopMode();
+    return () => mediaQuery.removeEventListener("change", updateDesktopMode);
+  }, []);
+
+  useLayoutEffect(() => {
+    setPortalTarget(
+      isDesktop ? document.querySelector(".monitor-immersive-shell") : null,
+    );
+  }, [isDesktop]);
+
+  useLayoutEffect(() => {
+    if (!portalTarget) return undefined;
+    const placeholder = placeholderRef.current;
+    const visual = visualRef.current;
+    if (!placeholder || !visual) return undefined;
+
+    const updatePlacement = () => {
+      const rect = placeholder.getBoundingClientRect();
+      visual.style.setProperty("--quote-desktop-left", `${rect.left}px`);
+      visual.style.setProperty("--quote-desktop-width", `${rect.width}px`);
+    };
+
+    const resizeObserver = typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(updatePlacement);
+    resizeObserver?.observe(placeholder);
+    window.addEventListener("resize", updatePlacement);
+    updatePlacement();
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", updatePlacement);
+      visual.style.removeProperty("--quote-desktop-left");
+      visual.style.removeProperty("--quote-desktop-width");
+    };
+  }, [portalTarget, visualRef]);
+
+  return { isDesktop, placeholderRef, portalTarget };
+}
+
 export function QuoteConfigurator({
+  catalogService,
   exportProductionQuoteUseCase,
+  intro,
   type,
-  onNavigate,
+  tabs,
 }) {
   const {
     quote,
@@ -40,23 +149,52 @@ export function QuoteConfigurator({
     hasAssistant,
     setQuantity,
     setOption,
+    setCastingSelections,
+    setLocationSelection,
     toggleExtra,
   } = useProductionQuote(type);
+  const [resourceExplorerTab, setResourceExplorerTab] = useState(null);
+  const contentRef = useRef(null);
+  const visualRef = useRef(null);
+  const {
+    isDesktop,
+    placeholderRef,
+    portalTarget,
+  } = useDesktopQuoteVisualPortal(visualRef);
+  useQuoteStickyViewportEffects({ contentRef, isDesktop, visualRef });
+
+  const visualColumn = (
+    <aside
+      ref={visualRef}
+      className={`quote-visual-column${portalTarget ? " is-desktop-portal" : ""}`}
+    >
+      {tabs}
+      <QuoteStudioPreview
+        quote={quote}
+        production={production}
+        total={pricing.total}
+      />
+    </aside>
+  );
 
   return (
-    <div className="quote-layout">
-      <div className="quote-configuration">
+    <>
+      <div className="quote-composer">
+      {portalTarget
+        ? <div ref={placeholderRef} className="quote-visual-placeholder" aria-hidden="true" />
+        : visualColumn}
+      <div ref={contentRef} className="quote-content-column">
+        <div className="quote-content-intro">
+          {intro}
+        </div>
+        <div className="quote-layout">
+          <div className="quote-configuration">
         <section className="config-card config-heading">
           <div><span className="config-kicker">Producción</span><h2>{production.name}</h2></div>
           <span className="format-badge">
             {production.format} · Base {formatUsd(production.basePrice)}
           </span>
         </section>
-        <QuoteStudioPreview
-          quote={quote}
-          production={production}
-          total={pricing.total}
-        />
         <div className="config-grid">
           <ConfigSection title="Equipo técnico" index="01">
             <QuantityControl
@@ -118,37 +256,34 @@ export function QuoteConfigurator({
             <p className="config-note">
               Cada video adicional suma edición y {production.hoursPerExtraVideo} {production.hoursPerExtraVideo === 1 ? "hora" : "horas"} de producción.
             </p>
-            <label className="select-field">
+            <div className="select-field">
               <span>Fotografías</span>
-              <select
+              <PhotoPackageSelect
+                options={PHOTO_PACKAGES}
+                prices={production.prices.photos}
                 value={quote.photos}
-                onChange={(event) => setOption("photos", event.target.value)}
-              >
-                {PHOTO_PACKAGES.map((option) => {
-                  const price = production.prices.photos[option];
-                  return (
-                    <option key={option} value={option}>
-                      {option}{price > 0 ? ` · +${formatUsd(price)}` : " · Incluido"}
-                    </option>
-                  );
-                })}
-              </select>
-            </label>
+                onChange={(value) => setOption("photos", value)}
+              />
+            </div>
           </ConfigSection>
 
           <ConfigSection title="Talento y espacios" index="04">
-            <QuantityControl
-              label="Personas de casting"
-              value={quote.casting}
-              minimum={0}
-              maximum={production.maximumCasting}
-              priceHint={additionalPrice(production.prices.castingPerson, "c/u")}
-              onChange={(value) => setQuantity("casting", value)}
+            <QuoteResourceControl
+              label="Casting"
+              value={quote.castingSelections.length
+                ? quote.castingSelections.map((item) => item.name).join(" · ")
+                : "Explora y añade los perfiles que necesites"}
+              meta={`${quote.castingSelections.length} ${quote.castingSelections.length === 1 ? "perfil" : "perfiles"}`}
+              onClick={() => setResourceExplorerTab("casting")}
             />
-            <div className="linked-actions">
-              <button type="button" onClick={() => onNavigate("casting")}>Ver base de casting →</button>
-              <button type="button" onClick={() => onNavigate("locations")}>Buscar locaciones →</button>
-            </div>
+            <QuoteResourceControl
+              label="Locación"
+              value={quote.locationSelection?.name || "Elige el espacio para la producción"}
+              meta={quote.locationSelection
+                ? `1 locación · ${formatUsd(quote.locationSelection.rate.value)} / hora`
+                : "0 locaciones"}
+              onClick={() => setResourceExplorerTab("locations")}
+            />
           </ConfigSection>
         </div>
 
@@ -169,14 +304,114 @@ export function QuoteConfigurator({
             ))}
           </div>
         </section>
-      </div>
+          </div>
 
-      <QuoteSummary
-        exportProductionQuoteUseCase={exportProductionQuoteUseCase}
-        quote={quote}
-        production={production}
-        pricing={pricing}
-      />
+          <QuoteSummary
+            exportProductionQuoteUseCase={exportProductionQuoteUseCase}
+            quote={quote}
+            production={production}
+            pricing={pricing}
+          />
+        </div>
+      </div>
+      </div>
+      {portalTarget && createPortal(visualColumn, portalTarget)}
+      {resourceExplorerTab && (
+        <QuoteResourceExplorer
+          catalogService={catalogService}
+          castingSelections={quote.castingSelections}
+          initialTab={resourceExplorerTab}
+          locationSelection={quote.locationSelection}
+          onApply={({ castingSelections, locationSelection }) => {
+            setCastingSelections(castingSelections);
+            setLocationSelection(locationSelection);
+            setResourceExplorerTab(null);
+          }}
+          onClose={() => setResourceExplorerTab(null)}
+        />
+      )}
+    </>
+  );
+}
+
+function QuoteResourceControl({ label, meta, onClick, value }) {
+  return (
+    <button
+      className="group grid w-full grid-cols-[1fr_auto] items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3 text-left transition-colors hover:border-white/25 hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+      type="button"
+      onClick={onClick}
+    >
+      <span className="min-w-0">
+        <strong className="block text-sm font-medium text-white">{label}</strong>
+        <small className="mt-1 block truncate text-white/40">{value}</small>
+      </span>
+      <span className="grid justify-items-end gap-1 text-xs text-white/45"><small>{meta}</small><i className="not-italic transition-transform group-hover:translate-x-0.5" aria-hidden="true">→</i></span>
+    </button>
+  );
+}
+
+function PhotoPackageSelect({ options, prices, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const triggerRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const closeOnOutsideClick = (event) => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
+  }, [open]);
+
+  const describePrice = (option) => (
+    prices[option] > 0 ? `+${formatUsd(prices[option])}` : "Incluido"
+  );
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Escape") {
+      setOpen(false);
+      triggerRef.current?.focus();
+    }
+  };
+
+  return (
+    <div ref={rootRef} className="photo-package-select" onKeyDown={handleKeyDown}>
+      <button
+        ref={triggerRef}
+        className="photo-select-trigger"
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span>{value}</span>
+        <small>{describePrice(value)}</small>
+        <i aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="photo-select-menu" role="listbox" aria-label="Paquete de fotografías">
+          {options.map((option) => (
+            <button
+              key={option}
+              className="photo-select-option"
+              type="button"
+              role="option"
+              aria-selected={value === option}
+              onClick={() => {
+                onChange(option);
+                setOpen(false);
+                triggerRef.current?.focus();
+              }}
+            >
+              <span>{option}</span>
+              <small>{describePrice(option)}</small>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -256,7 +491,8 @@ function QuoteSummary({
         <SummaryRow label="Producción" value={`${quote.hours} h`} />
         <SummaryRow label="Entregas" value={`${quote.videos} video${quote.videos > 1 ? "s" : ""}`} />
         <SummaryRow label="Fotografía" value={quote.photos} />
-        <SummaryRow label="Casting" value={quote.casting || "Sin casting"} />
+        <SummaryRow label="Casting" value={quote.castingSelections.length || "Sin elegir"} />
+        <SummaryRow label="Locación" value={quote.locationSelection ? `1 · ${quote.locationSelection.name}` : "Sin elegir"} />
       </dl>
       {quote.extras.length > 0 && (
         <div className="summary-extras">

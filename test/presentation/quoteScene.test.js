@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   QUOTE_EXTRA,
+  QUOTE_RATE_UNIT,
   changeQuoteQuantity,
   createProductionQuote,
+  setQuoteCastingSelections,
   toggleQuoteExtra,
 } from "../../src/domain/production/productionQuote.js";
 import {
@@ -50,14 +52,18 @@ test("cámaras, luces y casting agregan y retiran una capa exacta", () => {
   const base = createProductionQuote(PRODUCTION_TYPE.REEL);
   const cameraAdded = changeQuoteQuantity(base, "cameras", 2);
   const lightAdded = changeQuoteQuantity(base, "lights", 3);
-  const castingAdded = changeQuoteQuantity(base, "casting", 1);
+  const castingAdded = setQuoteCastingSelections(base, [{
+    id: "casting-1",
+    name: "Ana",
+    rate: { unit: QUOTE_RATE_UNIT.DAILY, value: 120 },
+  }]);
 
   assert.equal(layersOfKind(cameraAdded, "camera").length, 2);
   assert.equal(layersOfKind(changeQuoteQuantity(cameraAdded, "cameras", 1), "camera").length, 1);
   assert.equal(layersOfKind(lightAdded, "light").length, 3);
   assert.equal(layersOfKind(changeQuoteQuantity(lightAdded, "lights", 2), "light").length, 2);
   assert.equal(layersOfKind(castingAdded, "casting").length, 1);
-  assert.equal(layersOfKind(changeQuoteQuantity(castingAdded, "casting", 0), "casting").length, 0);
+  assert.equal(layersOfKind(setQuoteCastingSelections(castingAdded, []), "casting").length, 0);
 });
 
 test("maquillaje, sonido y asistente controlan sus capas", () => {
@@ -117,7 +123,11 @@ test("la escena expone una descripción accesible actualizada", () => {
   let quote = createProductionQuote(PRODUCTION_TYPE.REEL);
   quote = changeQuoteQuantity(quote, "cameras", 2);
   quote = changeQuoteQuantity(quote, "lights", 3);
-  quote = changeQuoteQuantity(quote, "casting", 1);
+  quote = setQuoteCastingSelections(quote, [{
+    id: "casting-1",
+    name: "Ana",
+    rate: { unit: QUOTE_RATE_UNIT.DAILY, value: 120 },
+  }]);
   quote = { ...quote, professionalSound: true };
 
   const description = describeQuoteScene(

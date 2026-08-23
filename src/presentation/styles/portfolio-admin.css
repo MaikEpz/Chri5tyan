@@ -1,0 +1,286 @@
+/* iPhone vertical video feed */
+.phone-portfolio-workspace {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  color: #fff;
+  background: #000;
+}
+
+.phone-portfolio-workspace button {
+  font: inherit;
+}
+
+.phone-feed-controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  padding:
+    max(1rem, env(safe-area-inset-top))
+    max(1rem, env(safe-area-inset-right))
+    1rem
+    max(1rem, env(safe-area-inset-left));
+  pointer-events: none;
+}
+
+.phone-feed-back,
+.phone-feed-audio {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.34);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(14px);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.phone-feed-back {
+  justify-self: start;
+  gap: 0.55rem;
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+}
+
+.phone-feed-audio {
+  justify-self: end;
+  width: 2.75rem;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 1rem;
+}
+
+.phone-feed-back:hover,
+.phone-feed-audio:hover {
+  border-color: rgba(255, 255, 255, 0.58);
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.phone-feed-back:focus-visible,
+.phone-feed-audio:focus-visible,
+.phone-feed-media-switch button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.phone-feed-media-switch {
+  display: inline-flex;
+  grid-column: 2;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.34);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+}
+
+.phone-feed-media-switch button {
+  min-height: 2.3rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  color: rgba(255, 255, 255, 0.66);
+  background: transparent;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.phone-feed-media-switch button.is-active {
+  color: #111;
+  background: #fff;
+}
+
+.phone-video-feed {
+  width: 100%;
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  touch-action: pan-y;
+}
+
+.phone-video-feed::-webkit-scrollbar {
+  display: none;
+}
+
+.phone-video-slide {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: #090909;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.phone-video-poster,
+.phone-feed-video {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.phone-video-poster-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.phone-feed-video {
+  z-index: 1;
+}
+
+.phone-video-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.38), transparent 24%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.82), transparent 43%);
+  pointer-events: none;
+}
+
+.phone-video-copy {
+  position: absolute;
+  right: max(1.25rem, env(safe-area-inset-right));
+  bottom: max(2rem, calc(env(safe-area-inset-bottom) + 1rem));
+  left: max(1.25rem, env(safe-area-inset-left));
+  z-index: 3;
+  max-width: 38rem;
+  pointer-events: none;
+}
+
+.phone-video-copy span {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.phone-video-copy h1 {
+  margin: 0.45rem 0 0;
+  font-family: Poppins, ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(3.5rem, 11vw, 8rem);
+  font-weight: 600;
+  line-height: 0.84;
+  letter-spacing: -0.055em;
+  text-wrap: balance;
+}
+
+.phone-video-position {
+  position: absolute;
+  right: max(1.25rem, env(safe-area-inset-right));
+  bottom: max(2rem, calc(env(safe-area-inset-bottom) + 1rem));
+  z-index: 3;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+}
+
+@media (max-width: 560px) {
+  .phone-feed-back {
+    width: 2.75rem;
+    padding: 0;
+  }
+
+  .phone-feed-back span:last-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .phone-feed-media-switch button {
+    padding-inline: 0.72rem;
+  }
+
+  .phone-video-copy {
+    right: 4.5rem;
+  }
+
+  .phone-video-copy h1 {
+    font-size: clamp(3.25rem, 17vw, 5.5rem);
+  }
+}
+
+@media (orientation: landscape) {
+  .phone-video-poster {
+    opacity: 0.42;
+    filter: blur(22px) brightness(0.72);
+    transform: scale(1.08);
+  }
+
+  .phone-portfolio-workspace.is-photos-mode .phone-video-poster {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+
+  .phone-feed-video {
+    right: auto;
+    left: 50%;
+    width: 56.25dvh;
+    max-width: 100%;
+    object-fit: cover;
+    transform: translateX(-50%);
+    box-shadow:
+      -1.5rem 0 3rem rgba(0, 0, 0, 0.28),
+      1.5rem 0 3rem rgba(0, 0, 0, 0.28);
+  }
+
+  .phone-video-copy {
+    right: auto;
+    left: max(
+      calc(env(safe-area-inset-left) + 1rem),
+      calc(50% - 28.125dvh + 1rem)
+    );
+    max-width: min(34rem, calc(56.25dvh - 2rem));
+  }
+
+  .phone-video-copy h1 {
+    font-size: clamp(2.4rem, 8dvh, 4.5rem);
+  }
+
+  .phone-video-position {
+    top: max(1rem, calc(env(safe-area-inset-top) + 0.75rem));
+    right: max(
+      calc(env(safe-area-inset-right) + 1rem),
+      calc(50% - 28.125dvh + 1rem)
+    );
+    bottom: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phone-video-feed {
+    scroll-behavior: auto;
+  }
+
+  .quote-studio-layer {
+    animation: none;
+  }
+}

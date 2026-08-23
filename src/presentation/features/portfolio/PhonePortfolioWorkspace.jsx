@@ -2,13 +2,46 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { PRODUCTION_REFERENCES } from "../../../domain/production/productionReferences.js";
 import { getPortfolioImage } from "./portfolioImages.js";
 import { getPortfolioVideo } from "./portfolioVideos.js";
+import { AsyncImage } from "../../components/ui/AsyncImage.jsx";
 
-export function PhonePortfolioWorkspace({ onBack }) {
+export function PhonePortfolioWorkspace({ catalogService, onBack }) {
   const feedRef = useRef(null);
   const videoRefs = useRef(new Map());
   const [activeId, setActiveId] = useState(PRODUCTION_REFERENCES[0]?.id ?? null);
   const [failedVideoIds, setFailedVideoIds] = useState(() => new Set());
   const [isMuted, setIsMuted] = useState(true);
+  const [mediaType, setMediaType] = useState("videos");
+  const [dynamicReferences, setDynamicReferences] = useState([]);
+  const references = [
+    ...dynamicReferences.filter((reference) => (
+      mediaType === "photos" ? reference.portfolioType === "PHOTO" : reference.portfolioType === "VIDEO"
+    )),
+    ...PRODUCTION_REFERENCES,
+  ];
+  const referenceKey = references.map((reference) => reference.id).join("|");
+
+  useEffect(() => {
+    if (!catalogService?.listPortfolio) return undefined;
+    const controller = new AbortController();
+    void catalogService.listPortfolio({
+      page: 0,
+      size: 100,
+      sort: "displayOrder,asc",
+    }, controller.signal).then((page) => {
+      setDynamicReferences(page.records.map((item) => ({
+        id: `portfolio-${item.id}`,
+        portfolioType: item.type,
+        category: item.category,
+        title: item.title,
+        client: item.client,
+        posterUrl: item.type === "PHOTO" ? item.media?.url : item.cover?.url,
+        videoUrl: item.type === "VIDEO" ? item.media?.url : null,
+      })));
+    }).catch((error) => {
+      if (error?.name !== "AbortError") setDynamicReferences([]);
+    });
+    return () => controller.abort();
+  }, [catalogService]);
 
   const registerVideo = useCallback((id, video) => {
     if (video) {
@@ -44,14 +77,15 @@ export function PhonePortfolioWorkspace({ onBack }) {
 
     feed.querySelectorAll("[data-reference-id]").forEach((slide) => observer.observe(slide));
     return () => observer.disconnect();
-  }, []);
+  }, [referenceKey]);
 
   useEffect(() => {
     videoRefs.current.forEach((video, id) => {
       video.muted = isMuted;
 
       if (
-        id !== activeId
+        mediaType !== "videos"
+        || id !== activeId
         || failedVideoIds.has(id)
         || document.visibilityState === "hidden"
       ) {
@@ -63,7 +97,7 @@ export function PhonePortfolioWorkspace({ onBack }) {
         // Autoplay can still be declined by browser or OS policy.
       });
     });
-  }, [activeId, failedVideoIds, isMuted]);
+  }, [activeId, failedVideoIds, isMuted, mediaType]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -73,7 +107,7 @@ export function PhonePortfolioWorkspace({ onBack }) {
       }
 
       const activeVideo = videoRefs.current.get(activeId);
-      if (activeVideo && !failedVideoIds.has(activeId)) {
+      if (mediaType === "videos" && activeVideo && !failedVideoIds.has(activeId)) {
         activeVideo.play().catch(() => {});
       }
     };
@@ -83,7 +117,7 @@ export function PhonePortfolioWorkspace({ onBack }) {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       pauseAllVideos();
     };
-  }, [activeId, failedVideoIds, pauseAllVideos]);
+  }, [activeId, failedVideoIds, mediaType, pauseAllVideos]);
 
   const handleVideoError = useCallback((id) => {
     const failedVideo = videoRefs.current.get(id);
@@ -93,25 +127,66 @@ export function PhonePortfolioWorkspace({ onBack }) {
 
   const activeReference = PRODUCTION_REFERENCES.find(
     (reference) => reference.id === activeId,
-  );
+  ) || dynamicReferences.find((reference) => reference.id === activeId);
   const activeVideoUrl = activeReference
     ? activeReference.videoUrl ?? getPortfolioVideo(activeReference.id)
     : null;
   const activeHasVideo = Boolean(
-    activeVideoUrl && !failedVideoIds.has(activeReference.id),
+    mediaType === "videos"
+    && activeVideoUrl
+    && activeReference
+    && !failedVideoIds.has(activeReference.id),
   );
+  const handleMediaTypeChange = (nextMediaType) => {
+    if (nextMediaType === mediaType) return;
+    pauseAllVideos();
+    setMediaType(nextMediaType);
+    const nextReferences = [
+      ...dynamicReferences.filter((reference) => (
+        nextMediaType === "photos" ? reference.portfolioType === "PHOTO" : reference.portfolioType === "VIDEO"
+      )),
+      ...PRODUCTION_REFERENCES,
+    ];
+    setActiveId(nextReferences[0]?.id ?? null);
+  };
   const handleBack = () => {
     pauseAllVideos();
     onBack();
   };
 
   return (
-    <div className="phone-portfolio-workspace">
+    <div
+      className={`phone-portfolio-workspace is-${mediaType}-mode`}
+      data-media-type={mediaType}
+    >
       <header className="phone-feed-controls">
         <button className="phone-feed-back" type="button" onClick={handleBack}>
           <span aria-hidden="true">←</span>
           <span>Volver</span>
         </button>
+
+        <div
+          className="phone-feed-media-switch"
+          role="group"
+          aria-label="Tipo de contenido"
+        >
+          <button
+            type="button"
+            className={mediaType === "photos" ? "is-active" : ""}
+            aria-pressed={mediaType === "photos"}
+            onClick={() => handleMediaTypeChange("photos")}
+          >
+            Fotos
+          </button>
+          <button
+            type="button"
+            className={mediaType === "videos" ? "is-active" : ""}
+            aria-pressed={mediaType === "videos"}
+            onClick={() => handleMediaTypeChange("videos")}
+          >
+            Videos
+          </button>
+        </div>
 
         {activeHasVideo && (
           <button
@@ -129,16 +204,20 @@ export function PhonePortfolioWorkspace({ onBack }) {
       <main
         ref={feedRef}
         className="phone-video-feed"
-        aria-label="Referencias audiovisuales"
+        aria-label={
+          mediaType === "videos" ? "Videos del portafolio" : "Fotos del portafolio"
+        }
       >
-        {PRODUCTION_REFERENCES.map((reference, index) => (
+        {references.map((reference, index) => (
           <VideoFeedSlide
             key={reference.id}
             index={index}
+            mediaType={mediaType}
             reference={reference}
             videoFailed={failedVideoIds.has(reference.id)}
             registerVideo={registerVideo}
             onVideoError={handleVideoError}
+            total={references.length}
           />
         ))}
       </main>
@@ -148,14 +227,16 @@ export function PhonePortfolioWorkspace({ onBack }) {
 
 function VideoFeedSlide({
   index,
+  mediaType,
   onVideoError,
   reference,
   registerVideo,
   videoFailed,
+  total,
 }) {
-  const posterUrl = getPortfolioImage(reference.imageId);
+  const posterUrl = reference.posterUrl ?? getPortfolioImage(reference.imageId);
   const videoUrl = reference.videoUrl ?? getPortfolioVideo(reference.id);
-  const hasVideo = Boolean(videoUrl && !videoFailed);
+  const hasVideo = Boolean(mediaType === "videos" && videoUrl && !videoFailed);
 
   return (
     <article
@@ -163,13 +244,16 @@ function VideoFeedSlide({
       data-reference-id={reference.id}
       aria-label={`${reference.title}, ${reference.category}`}
     >
-      <img
-        className="phone-video-poster"
-        src={posterUrl}
-        alt={`Referencia ${reference.title}: ${reference.client}`}
-        decoding="async"
-        loading={index === 0 ? "eager" : "lazy"}
-      />
+      {posterUrl && (
+        <AsyncImage
+          wrapperClassName="phone-video-poster-frame"
+          className="phone-video-poster"
+          src={posterUrl}
+          alt={`Referencia ${reference.title}: ${reference.client}`}
+          decoding="async"
+          loading={index === 0 ? "eager" : "lazy"}
+        />
+      )}
 
       {hasVideo && (
         <video
@@ -192,7 +276,7 @@ function VideoFeedSlide({
       </div>
       <span className="phone-video-position" aria-hidden="true">
         {String(index + 1).padStart(2, "0")} /{" "}
-        {String(PRODUCTION_REFERENCES.length).padStart(2, "0")}
+        {String(total).padStart(2, "0")}
       </span>
     </article>
   );

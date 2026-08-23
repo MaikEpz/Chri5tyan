@@ -36,6 +36,7 @@ export function ReactThreeViewport({
   activeMonitorView,
   cameraResetKey,
   monitorContentVisible,
+  onboardingVisible,
   onActiveMonitorViewChange,
   onMonitorClose,
   onMonitorOpen,
@@ -77,6 +78,7 @@ export function ReactThreeViewport({
               lowPowerMode={performance.lowPowerMode}
               modelAsset={modelAsset}
               monitorContentVisible={monitorContentVisible}
+              onboardingVisible={onboardingVisible}
               onActiveMonitorViewChange={onActiveMonitorViewChange}
               onMonitorClose={onMonitorClose}
               onMonitorOpen={onMonitorOpen}

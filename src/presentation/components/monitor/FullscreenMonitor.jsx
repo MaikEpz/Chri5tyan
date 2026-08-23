@@ -14,6 +14,9 @@ const PHONE_EXIT_DURATION_MS = 720;
 const EXIT_COMPLETION_GRACE_MS = 80;
 
 export function FullscreenMonitor({
+  authSessionService,
+  catalogService,
+  createCinemaRequestUseCase,
   exportProductionQuoteUseCase,
   isClosing = false,
   isVisible = false,
@@ -85,6 +88,9 @@ export function FullscreenMonitor({
       <div className={`monitor-app${contentStateClass}`}>
         <Suspense fallback={null}>
           <ActiveWorkspace
+            authSessionService={authSessionService}
+            catalogService={catalogService}
+            createCinemaRequestUseCase={createCinemaRequestUseCase}
             exportProductionQuoteUseCase={exportProductionQuoteUseCase}
             onBack={() => setLogoReturning(true)}
           />

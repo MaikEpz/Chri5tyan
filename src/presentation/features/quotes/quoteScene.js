@@ -29,10 +29,7 @@ export function getQuoteSceneLayers(quote, production) {
     production.maximumLights,
     Math.max(production.minimumLights, quote.lights),
   );
-  const castingCount = Math.min(
-    production.maximumCasting,
-    Math.max(0, quote.casting),
-  );
+  const castingCount = quote.castingSelections.length;
   const layers = [
     ...createRepeatedLayers("camera", cameraCount),
     ...createRepeatedLayers("light", lightCount, "softbox"),
@@ -76,9 +73,9 @@ export function describeQuoteScene(quote, production) {
     `${quote.lights} ${quote.lights === 1 ? "luz" : "luces"}`,
   ];
 
-  if (quote.casting > 0) {
+  if (quote.castingSelections.length > 0) {
     details.push(
-      `${quote.casting} ${quote.casting === 1
+      `${quote.castingSelections.length} ${quote.castingSelections.length === 1
         ? "persona de casting"
         : "personas de casting"}`,
     );

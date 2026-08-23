@@ -8,6 +8,11 @@ const MONITOR_FOCUS_DURATION = 1.5;
 const MONITOR_FOCUS_ARC_HEIGHT = 0.22;
 const MONITOR_OVERLAY_INSET = 0.017425;
 const MONITOR_OVERLAY_OFFSET_X = 0;
+const AMBIENT_YAW = THREE.MathUtils.degToRad(1.35);
+const AMBIENT_PITCH = THREE.MathUtils.degToRad(0.55);
+const AMBIENT_POSITION_X = 0.11;
+const AMBIENT_POSITION_Y = 0.075;
+const AMBIENT_POSITION_Z = 0.065;
 
 export function ScrollLookControls({
   cameraPosition,
@@ -43,6 +48,19 @@ export function ScrollLookControls({
   const returnProgress = useRef(0);
   const isReturning = useRef(false);
   const lastResetKey = useRef(resetKey);
+  const ambientBlend = useRef(0);
+  const reduceMotion = useRef(false);
+
+  useEffect(() => {
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handleMotionPreference = () => {
+      reduceMotion.current = motionQuery.matches;
+    };
+
+    handleMotionPreference();
+    motionQuery.addEventListener("change", handleMotionPreference);
+    return () => motionQuery.removeEventListener("change", handleMotionPreference);
+  }, []);
 
   useEffect(() => {
     if (!enabled) return;
@@ -127,10 +145,11 @@ export function ScrollLookControls({
     };
   }, [enabled, gl.domElement]);
 
-  useFrame((_, delta) => {
+  useFrame(({ clock }, delta) => {
     if (!enabled || !initialized.current) return;
 
     if (focusAnchor) {
+      ambientBlend.current = 0;
       isReturning.current = false;
       focusTarget.current.fromArray(focusAnchor.position);
       focusQuaternion.current.fromArray(focusAnchor.quaternion);
@@ -195,6 +214,7 @@ export function ScrollLookControls({
     }
 
     if (isReturning.current) {
+      ambientBlend.current = 0;
       returnProgress.current = Math.min(
         returnProgress.current + delta / MONITOR_FOCUS_DURATION,
         1,
@@ -235,9 +255,37 @@ export function ScrollLookControls({
       delta,
     );
 
-    camera.rotation.set(pitch.current, yaw.current, 0, "YXZ");
+    ambientBlend.current = THREE.MathUtils.damp(
+      ambientBlend.current,
+      reduceMotion.current ? 0 : 1,
+      1.8,
+      delta,
+    );
+    const time = clock.getElapsedTime();
+    const ambientYaw = (
+      Math.sin(time * 0.32)
+      + Math.sin(time * 0.14 + 1.4) * 0.28
+    ) * AMBIENT_YAW * ambientBlend.current;
+    const ambientPitch = Math.sin(time * 0.23 + 0.8)
+      * AMBIENT_PITCH
+      * ambientBlend.current;
+
+    camera.rotation.set(
+      pitch.current + ambientPitch,
+      yaw.current + ambientYaw,
+      0,
+      "YXZ",
+    );
     camera.position.fromArray(cameraPosition);
-    camera.position.y = cameraPosition[1];
+    camera.position.x += Math.sin(time * 0.2 + 0.5)
+      * AMBIENT_POSITION_X
+      * ambientBlend.current;
+    camera.position.y += Math.sin(time * 0.25 + 1.8)
+      * AMBIENT_POSITION_Y
+      * ambientBlend.current;
+    camera.position.z += Math.sin(time * 0.16 + 2.6)
+      * AMBIENT_POSITION_Z
+      * ambientBlend.current;
   });
 
   return null;

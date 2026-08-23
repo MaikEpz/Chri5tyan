@@ -44,19 +44,40 @@ function slugify(value) {
     .replace(/^-|-$/g, "");
 }
 
-function drawHeader(doc, production, generatedAt) {
+async function drawLogo(doc, logoSvg) {
+  if (!logoSvg || typeof DOMParser === "undefined") return;
+
+  const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
+  const svg2PdfModule = await import("svg2pdf.js");
+  const svg2pdf = svg2PdfModule.svg2pdf
+    ?? svg2PdfModule.default?.svg2pdf
+    ?? svg2PdfModule["module.exports"]?.svg2pdf;
+  const logoDocument = new DOMParser().parseFromString(logoSvg, "image/svg+xml");
+  const logoElement = logoDocument.documentElement;
+
+  if (typeof svg2pdf !== "function" || logoElement.nodeName.toLowerCase() !== "svg") return;
+
+  doc.setPage(pageNumber);
+  await svg2pdf(logoElement, doc, {
+    x: PAGE.margin,
+    y: 5,
+    width: 48,
+    height: 30.14,
+  });
+  doc.setPage(pageNumber);
+}
+
+async function drawHeader(doc, production, generatedAt, logoSvg) {
   doc.setFillColor(...COLORS.ink);
   doc.rect(0, 0, PAGE.width, 48, "F");
 
-  doc.setTextColor(...COLORS.white);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(21);
-  doc.text("CHRIS", PAGE.margin, 19);
+  await drawLogo(doc, logoSvg);
 
+  doc.setTextColor(...COLORS.white);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setCharSpace(1.2);
-  doc.text("COTIZACIÓN DE PRODUCCIÓN", PAGE.margin, 29);
+  doc.text("COTIZACIÓN DE PRODUCCIÓN", PAGE.margin, 37.25);
   doc.setCharSpace(0);
 
   doc.setFontSize(9);
@@ -127,7 +148,7 @@ function drawConfiguration(doc, quote, production) {
   const rightDetails = [
     ["Entregas", `${quote.videos} video${quote.videos === 1 ? "" : "s"}`],
     ["Fotografías", quote.photos],
-    ["Casting", quote.casting || "Sin casting"],
+    ["Casting", quote.castingSelections.length || "Sin casting"],
     ["Maquillaje", yesNo(quote.makeup)],
     ["Sonido profesional", yesNo(quote.professionalSound)],
   ];
@@ -178,11 +199,12 @@ function drawBreakdown(doc, pricing) {
     ...pricing.additions,
   ];
   let y = 196;
+  const rowHeight = Math.min(5, 50 / Math.max(1, lines.length));
 
   lines.forEach((item) => {
     doc.setTextColor(...COLORS.ink);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
+    doc.setFontSize(rowHeight < 4 ? 7 : 8);
     doc.text(item.label, PAGE.margin + 4, y, { maxWidth: 112 });
     doc.text(String(item.quantity), 152, y, { align: "right" });
     doc.setFont("helvetica", "bold");
@@ -192,10 +214,10 @@ function drawBreakdown(doc, pricing) {
 
     doc.setDrawColor(...COLORS.line);
     doc.line(PAGE.margin, y + 3, PAGE.width - PAGE.margin, y + 3);
-    y += 5;
+    y += rowHeight;
   });
 
-  const totalY = Math.max(247, y + 2);
+  const totalY = Math.min(267, Math.max(247, y + 2));
   doc.setFillColor(...COLORS.ink);
   doc.roundedRect(PAGE.margin, totalY, PAGE.width - (PAGE.margin * 2), 14, 3, 3, "F");
   doc.setTextColor(...COLORS.white);
@@ -206,6 +228,95 @@ function drawBreakdown(doc, pricing) {
   doc.text(formatUsd(pricing.total), PAGE.width - PAGE.margin - 6, totalY + 9.5, {
     align: "right",
   });
+}
+
+function drawSelectionCard(doc, { title, subtitle, availability, rateLabel, calculation, total }, y) {
+  const width = PAGE.width - (PAGE.margin * 2);
+  doc.setFillColor(...COLORS.panel);
+  doc.roundedRect(PAGE.margin, y, width, 27, 3, 3, "F");
+
+  doc.setTextColor(...COLORS.ink);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text(title, PAGE.margin + 6, y + 7, { maxWidth: 105 });
+
+  doc.setTextColor(...COLORS.muted);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.text(subtitle || "Selección de cotización", PAGE.margin + 6, y + 12, { maxWidth: 105 });
+  if (availability) {
+    doc.text(`Disponibilidad: ${availability}`, PAGE.margin + 6, y + 17, { maxWidth: 118 });
+  }
+
+  doc.setTextColor(...COLORS.ink);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.text(rateLabel, PAGE.width - PAGE.margin - 6, y + 8, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.text(calculation, PAGE.width - PAGE.margin - 6, y + 14, { align: "right" });
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text(formatUsd(total), PAGE.width - PAGE.margin - 6, y + 21, { align: "right" });
+}
+
+async function drawSelectionsPage(doc, pricing, production, generatedAt, logoSvg) {
+  const resources = pricing.selectedResources;
+  if (!resources.casting.length && !resources.location) return;
+
+  doc.addPage();
+  doc.setFillColor(...COLORS.paper);
+  doc.rect(0, 0, PAGE.width, PAGE.height, "F");
+  await drawHeader(doc, production, generatedAt, logoSvg);
+  drawSectionTitle(doc, "Casting y locación", 62);
+  doc.setTextColor(...COLORS.muted);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.text("Selecciones temporales incluidas únicamente en esta cotización.", PAGE.margin, 69);
+
+  let y = 77;
+  resources.casting.forEach((selection) => {
+    const hourly = selection.rateUnit === "HOURLY";
+    drawSelectionCard(doc, {
+      title: selection.name,
+      subtitle: selection.specialty || "Perfil de casting",
+      availability: selection.availability,
+      rateLabel: `${hourly ? "Por hora" : "Por jornada"} · ${formatUsd(selection.unitPrice)}${selection.negotiable ? " · negociable" : ""}`,
+      calculation: hourly
+        ? `${selection.quantity} h × ${formatUsd(selection.unitPrice)}`
+        : `${selection.quantity} jornada × ${formatUsd(selection.unitPrice)}`,
+      total: selection.total,
+    }, y);
+    y += 31;
+  });
+
+  if (resources.location) {
+    const location = resources.location;
+    drawSelectionCard(doc, {
+      title: location.name,
+      subtitle: [location.cityName, location.provinceName].filter(Boolean).join(", ") || "Locación",
+      availability: location.availability,
+      rateLabel: `Por hora · ${formatUsd(location.unitPrice)}${location.negotiable ? " · negociable" : ""}`,
+      calculation: `${location.quantity} h × ${formatUsd(location.unitPrice)}`,
+      total: location.total,
+    }, y);
+    y += 31;
+  }
+
+  const totalY = Math.min(267, Math.max(y + 5, 242));
+  doc.setFillColor(...COLORS.ink);
+  doc.roundedRect(PAGE.margin, totalY, PAGE.width - (PAGE.margin * 2), 16, 3, 3, "F");
+  doc.setTextColor(...COLORS.white);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.text("SUBTOTAL CASTING Y LOCACIÓN", PAGE.margin + 6, totalY + 10);
+  doc.setFontSize(13);
+  doc.text(formatUsd(resources.total), PAGE.width - PAGE.margin - 6, totalY + 10.5, { align: "right" });
+
+  doc.setTextColor(...COLORS.muted);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.5);
+  doc.text("Las tarifas marcadas como negociables utilizan el valor publicado únicamente como estimación.", PAGE.width / 2, 291, { align: "center" });
 }
 
 function drawFooter(doc) {
@@ -220,11 +331,24 @@ function drawFooter(doc) {
   );
 }
 
+function drawPageNumbers(doc) {
+  const totalPages = doc.getNumberOfPages();
+  if (totalPages < 2) return;
+  for (let page = 1; page <= totalPages; page += 1) {
+    doc.setPage(page);
+    doc.setTextColor(...COLORS.muted);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.text(`Página ${page} de ${totalPages}`, PAGE.width - PAGE.margin, 276, { align: "right" });
+  }
+}
+
 export async function createProductionQuotePdf({
   quote,
   production,
   pricing,
   generatedAt = new Date(),
+  logoSvg = null,
 }) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({
@@ -236,18 +360,28 @@ export async function createProductionQuotePdf({
 
   doc.setFillColor(...COLORS.paper);
   doc.rect(0, 0, PAGE.width, PAGE.height, "F");
-  drawHeader(doc, production, generatedAt);
+  await drawHeader(doc, production, generatedAt, logoSvg);
   drawTotal(doc, pricing.total);
   drawConfiguration(doc, quote, production);
   drawBreakdown(doc, pricing);
   drawFooter(doc);
+  await drawSelectionsPage(doc, pricing, production, generatedAt, logoSvg);
+  drawPageNumbers(doc);
 
   return doc;
 }
 
 export class JsPdfQuoteExporter extends QuotePdfExporter {
+  constructor({ logoSvg = null } = {}) {
+    super();
+    this.logoSvg = logoSvg;
+  }
+
   async export(data) {
-    const doc = await createProductionQuotePdf(data);
+    const doc = await createProductionQuotePdf({
+      ...data,
+      logoSvg: this.logoSvg,
+    });
     const date = new Date().toISOString().slice(0, 10);
     const filename = `cotizacion-chris-${slugify(data.production.name)}-${date}.pdf`;
     doc.save(filename);

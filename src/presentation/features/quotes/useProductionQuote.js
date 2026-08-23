@@ -26,5 +26,7 @@ export function useProductionQuote(type) {
     setQuantity: (field, value) => dispatch(quoteAction.setQuantity(field, value)),
     setOption: (field, value) => dispatch(quoteAction.setOption(field, value)),
     toggleExtra: (extra) => dispatch(quoteAction.toggleExtra(extra)),
+    setCastingSelections: (selections) => dispatch(quoteAction.setCastingSelections(selections)),
+    setLocationSelection: (selection) => dispatch(quoteAction.setLocationSelection(selection)),
   };
 }

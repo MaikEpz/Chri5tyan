@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "vite build",
-    "test": "node --test",
+    "dev": "vite --configLoader runner --host 127.0.0.1",
+    "build": "vite build --configLoader runner",
+    "test": "npm run test:unit && npm run test:ui",
+    "test:unit": "node --test",
+    "test:ui": "vitest run --configLoader runner",
     "preview": "vite preview --host 127.0.0.1",
     "start": "vite preview --host 0.0.0.0"
   },
@@ -14,14 +16,21 @@
     "@fontsource/poppins": "^5.3.0",
     "@react-three/drei": "latest",
     "@react-three/fiber": "latest",
+    "@tailwindcss/vite": "^4.3.3",
     "jspdf": "^4.2.1",
     "react": "latest",
     "react-dom": "latest",
+    "svg2pdf.js": "^2.7.0",
+    "tailwindcss": "^4.3.3",
     "three": "0.182.0",
     "three-stdlib": "^2.36.1"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.3",
     "@vitejs/plugin-react": "^6.0.3",
-    "vite": "latest"
+    "jsdom": "^29.1.1",
+    "vite": "latest",
+    "vitest": "^4.1.10"
   }
 }

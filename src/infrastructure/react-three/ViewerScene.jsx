@@ -3,11 +3,19 @@ import { useThree } from "@react-three/fiber";
 import { getResponsiveCameraView } from "./cameraView.js";
 import { ScrollLookControls } from "./controls/ScrollLookControls.jsx";
 import { AmbientDust } from "./effects/AmbientDust.jsx";
+import { WindowGodRays } from "./effects/WindowGodRays.jsx";
 import { SceneLighting } from "./lights/SceneLighting.jsx";
 import { LoadedModel } from "./model/LoadedModel.jsx";
 import { MonitorScreen } from "./monitor/MonitorScreen.jsx";
 const DESKTOP_SCREEN = "desktop";
 const PHONE_SCREEN = "phone";
+const DESKTOP_ACTIONS = [
+  "Elige tu formato",
+  "Arma tu set",
+  "Añade equipos",
+  "Selecciona talento",
+  "Calcula tu presupuesto",
+];
 
 export function ViewerScene({
   activeMonitorView = 0,
@@ -15,6 +23,7 @@ export function ViewerScene({
   lowPowerMode = false,
   modelAsset,
   monitorContentVisible = false,
+  onboardingVisible = false,
   onActiveMonitorViewChange = () => {},
   onMonitorClose = () => {},
   onMonitorOpen = () => {},
@@ -33,6 +42,7 @@ export function ViewerScene({
   const [phoneUnlocking, setPhoneUnlocking] = useState(false);
   const [hasModelLights, setHasModelLights] = useState(false);
   const [viewResetKey, setViewResetKey] = useState(0);
+  const [desktopActionIndex, setDesktopActionIndex] = useState(0);
   const phoneUnlockTimeoutRef = useRef(null);
   const lastCameraResetKeyRef = useRef(cameraResetKey);
   const handleModelReady = useCallback(() => {
@@ -84,7 +94,18 @@ export function ViewerScene({
     [],
   );
 
+  useEffect(() => {
+    const actionInterval = window.setInterval(() => {
+      setDesktopActionIndex(
+        (currentIndex) => (currentIndex + 1) % DESKTOP_ACTIONS.length,
+      );
+    }, 2600);
+
+    return () => window.clearInterval(actionInterval);
+  }, []);
+
   const activeAnchor = focusedScreen === PHONE_SCREEN ? phoneScreenAnchor : screenAnchor;
+  const desktopAction = DESKTOP_ACTIONS[desktopActionIndex];
 
   return (
     <>
@@ -98,9 +119,13 @@ export function ViewerScene({
         onPhoneScreenAnchor={setPhoneScreenAnchor}
         onExportedLightsChange={setHasModelLights}
       />
+      {!lowPowerMode && <WindowGodRays enabled={modelReady && !focusedScreen} />}
       <MonitorScreen
         activeView={activeMonitorView}
         anchor={screenAnchor}
+        guideLabel={desktopAction}
+        guidePrimary
+        guideVisible={onboardingVisible}
         idleCta="Explorar"
         isOpen={monitorContentVisible && focusedScreen === DESKTOP_SCREEN}
         isFocused={focusedScreen === DESKTOP_SCREEN}
@@ -115,6 +140,9 @@ export function ViewerScene({
         cornerRadius={0.055}
         contentScaleY={0.95}
         glowColor="#ffffff"
+        guideLabel="Ver portafolio"
+        guideOffsetXScale={0.88}
+        guideVisible={onboardingVisible}
         idleBackground="#000000"
         idleCta=""
         idleHitAreaHeightScale={1.344}

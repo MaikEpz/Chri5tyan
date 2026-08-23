@@ -1,13 +1,20 @@
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import {
   shouldShowFullscreenButton,
   shouldShowFullscreenSuggestion,
 } from "../fullscreenUi.js";
 import { useFullscreenMode } from "../hooks/useFullscreenMode.js";
 import { useMonitorExperience } from "../hooks/useMonitorExperience.js";
+import {
+  shouldShowViewerOnboarding,
+  viewerOnboardingStore,
+} from "../viewerOnboarding.js";
 import { FullscreenMonitor } from "./monitor/FullscreenMonitor.jsx";
 
 export function ViewerPage({
+  authSessionService,
+  catalogService,
+  createCinemaRequestUseCase,
   exportProductionQuoteUseCase,
   modelAsset,
   ViewportComponent,
@@ -16,6 +23,11 @@ export function ViewerPage({
   const monitor = useMonitorExperience();
   const [worldReady, setWorldReady] = useState(false);
   const [suggestionDismissed, setSuggestionDismissed] = useState(false);
+  const [onboardingRequested, setOnboardingRequested] = useState(
+    () => !viewerOnboardingStore.hasSeen(),
+  );
+  const [hasStartedFirstInteraction, setHasStartedFirstInteraction] = useState(false);
+  const [hasCompletedFirstInteraction, setHasCompletedFirstInteraction] = useState(false);
   const [isMobile, setIsMobile] = useState(() => (
     window.matchMedia("(pointer: coarse), (max-width: 768px)").matches
   ));
@@ -45,37 +57,76 @@ export function ViewerPage({
     void fullscreen.toggle();
   }, [fullscreen.toggle]);
 
+  const completeOnboarding = useCallback(() => {
+    viewerOnboardingStore.markSeen();
+    setOnboardingRequested(false);
+  }, []);
+
+  const handleMonitorOpen = useCallback((source) => {
+    completeOnboarding();
+    setHasStartedFirstInteraction(true);
+    monitor.openMonitor(source);
+  }, [completeOnboarding, monitor.openMonitor]);
+
+  const handleMonitorClose = useCallback(() => {
+    if (hasStartedFirstInteraction) setHasCompletedFirstInteraction(true);
+    monitor.requestClose();
+  }, [hasStartedFirstInteraction, monitor.requestClose]);
+
+  const showOnboarding = shouldShowViewerOnboarding({
+    monitorOpen: monitor.open,
+    onboardingRequested,
+    worldReady,
+  });
+
   const showFullscreenSuggestion = shouldShowFullscreenSuggestion({
+    hasCompletedFirstInteraction,
     isFullscreen: fullscreen.isFullscreen,
     isMobile,
     monitorOpen: monitor.open,
+    onboardingVisible: showOnboarding,
     suggestionDismissed,
     worldReady,
   });
-  const showFullscreenButton = shouldShowFullscreenButton({
-    monitorOpen: monitor.open,
-  });
+  const showFullscreenButton = shouldShowFullscreenButton({ monitorOpen: monitor.open })
+    && !showFullscreenSuggestion;
+  const showHelpButton = worldReady
+    && !monitor.open
+    && !showFullscreenSuggestion;
+  const toggleOnboarding = () => {
+    if (showOnboarding) {
+      completeOnboarding();
+      return;
+    }
 
+    setOnboardingRequested(true);
+  };
   return (
     <main className="viewer-shell">
-      <ViewportComponent
-        modelAsset={modelAsset}
-        activeMonitorView={monitor.activeView}
-        cameraResetKey={monitor.cameraResetKey}
-        monitorContentVisible={monitor.contentVisible}
-        onActiveMonitorViewChange={monitor.setActiveView}
-        onMonitorClose={monitor.requestClose}
-        onMonitorOpen={monitor.openMonitor}
-        onMonitorReady={monitor.markReady}
-        onWorldReady={handleWorldReady}
-      />
+      <Suspense fallback={<ViewerLoadingState modelName={modelAsset.name} />}>
+        <ViewportComponent
+          modelAsset={modelAsset}
+          activeMonitorView={monitor.activeView}
+          cameraResetKey={monitor.cameraResetKey}
+          monitorContentVisible={monitor.contentVisible}
+          onboardingVisible={showOnboarding}
+          onActiveMonitorViewChange={monitor.setActiveView}
+          onMonitorClose={handleMonitorClose}
+          onMonitorOpen={handleMonitorOpen}
+          onMonitorReady={monitor.markReady}
+          onWorldReady={handleWorldReady}
+        />
+      </Suspense>
       <FullscreenMonitor
+        authSessionService={authSessionService}
+        catalogService={catalogService}
+        createCinemaRequestUseCase={createCinemaRequestUseCase}
         exportProductionQuoteUseCase={exportProductionQuoteUseCase}
         isClosing={monitor.closing}
         isVisible={monitor.open && monitor.ready}
         origin={monitor.origin}
         source={monitor.source}
-        onClose={monitor.requestClose}
+        onClose={handleMonitorClose}
         onEnterComplete={monitor.showContent}
         onExitComplete={monitor.finishClose}
       />
@@ -85,6 +136,17 @@ export function ViewerPage({
           onDismiss={dismissFullscreenSuggestion}
         />
       )}
+      {showHelpButton && (
+        <button
+          className="viewer-help-toggle"
+          type="button"
+          aria-label={showOnboarding ? "Ocultar guía" : "Mostrar guía"}
+          aria-pressed={showOnboarding}
+          onClick={toggleOnboarding}
+        >
+          ?
+        </button>
+      )}
       {showFullscreenButton && (
         <FullscreenButton
           isFullscreen={fullscreen.isFullscreen}
@@ -92,6 +154,16 @@ export function ViewerPage({
         />
       )}
     </main>
+  );
+}
+
+function ViewerLoadingState({ modelName }) {
+  return (
+    <section className="viewer-stage grid place-items-center bg-[#050607]" aria-label={`Visor 3D del modelo ${modelName}`}>
+      <span className="text-xs font-semibold tracking-[0.16em] text-white/55 uppercase" role="status">
+        Preparando experiencia…
+      </span>
+    </section>
   );
 }
 
@@ -105,18 +177,16 @@ function FullscreenSuggestion({ onAccept, onDismiss }) {
       aria-describedby="fullscreen-suggestion-description"
     >
       <div className="fullscreen-suggestion-content">
-        <span className="fullscreen-suggestion-icon" aria-hidden="true">⛶</span>
-        <p className="fullscreen-suggestion-eyebrow">Experiencia inmersiva</p>
-        <h1 id="fullscreen-suggestion-title">¿Activar pantalla completa?</h1>
+        <h1 id="fullscreen-suggestion-title">¿Pantalla completa?</h1>
         <p id="fullscreen-suggestion-description">
-          Disfruta el mundo 3D usando todo el espacio disponible en tu pantalla.
+          Usa todo el espacio disponible.
         </p>
         <div className="fullscreen-suggestion-actions">
           <button type="button" className="fullscreen-suggestion-primary" onClick={onAccept}>
-            Activar pantalla completa
+            Activar
           </button>
           <button type="button" className="fullscreen-suggestion-secondary" onClick={onDismiss}>
-            Continuar sin activar
+            Ahora no
           </button>
         </div>
       </div>
@@ -134,7 +204,6 @@ function FullscreenButton({ isFullscreen, onToggle }) {
       onClick={onToggle}
     >
       <span aria-hidden="true">{isFullscreen ? "×" : "⛶"}</span>
-      {isFullscreen ? "Salir" : "Pantalla completa"}
     </button>
   );
 }

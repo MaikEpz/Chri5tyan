@@ -13,6 +13,11 @@ export const PHOTO_PACKAGES = Object.freeze([
   "Más de 10",
 ]);
 
+export const QUOTE_RATE_UNIT = Object.freeze({
+  HOURLY: "HOURLY",
+  DAILY: "DAILY",
+});
+
 export function createProductionQuote(type) {
   const production = getProductionType(type);
   return {
@@ -21,7 +26,8 @@ export function createProductionQuote(type) {
     lights: production.minimumLights,
     videos: 1,
     hours: production.baseHours,
-    casting: 0,
+    castingSelections: [],
+    locationSelection: null,
     makeup: production.makeupByDefault,
     professionalSound: production.professionalSoundByDefault,
     photos: PHOTO_PACKAGES[0],
@@ -41,6 +47,11 @@ export function hasProductionAssistant(quote) {
 export function calculateProductionQuote(quote) {
   const production = getProductionType(quote.type);
   const additions = [];
+  const selectedResources = {
+    casting: [],
+    location: null,
+    total: 0,
+  };
 
   addPriceLine(
     additions,
@@ -66,12 +77,50 @@ export function calculateProductionQuote(quote) {
     quote.videos - 1,
     production.prices.additionalVideo,
   );
-  addPriceLine(
-    additions,
-    "Persona de casting",
-    quote.casting,
-    production.prices.castingPerson,
-  );
+  quote.castingSelections.forEach((selection) => {
+    const hourly = selection.rate.unit === QUOTE_RATE_UNIT.HOURLY;
+    const line = addPriceLine(
+      additions,
+      `${selection.name} · Casting por ${hourly ? "hora" : "jornada"}`,
+      hourly ? quote.hours : 1,
+      selection.rate.value,
+    );
+    selectedResources.casting.push({
+      kind: "CASTING",
+      id: selection.id,
+      name: selection.name,
+      specialty: selection.specialty,
+      availability: selection.availability,
+      rateUnit: selection.rate.unit,
+      negotiable: selection.rate.negotiable,
+      quantity: line.quantity,
+      unitPrice: line.unitPrice,
+      total: line.total,
+    });
+  });
+
+  if (quote.locationSelection) {
+    const line = addPriceLine(
+      additions,
+      `${quote.locationSelection.name} · Locación por hora`,
+      quote.hours,
+      quote.locationSelection.rate.value,
+    );
+    selectedResources.location = {
+      kind: "LOCATION",
+      id: quote.locationSelection.id,
+      name: quote.locationSelection.name,
+      provinceName: quote.locationSelection.provinceName,
+      cityName: quote.locationSelection.cityName,
+      address: quote.locationSelection.address,
+      availability: quote.locationSelection.availability,
+      rateUnit: quote.locationSelection.rate.unit,
+      negotiable: quote.locationSelection.rate.negotiable,
+      quantity: line.quantity,
+      unitPrice: line.unitPrice,
+      total: line.total,
+    };
+  }
 
   if (quote.makeup && !production.makeupByDefault) {
     addPriceLine(additions, "Maquillaje", 1, production.prices.makeup);
@@ -94,10 +143,15 @@ export function calculateProductionQuote(quote) {
   });
 
   const additionsTotal = additions.reduce((total, item) => total + item.total, 0);
+  selectedResources.total = selectedResources.casting.reduce(
+    (total, item) => total + item.total,
+    selectedResources.location?.total ?? 0,
+  );
   return {
     additions,
     additionsTotal,
     basePrice: production.basePrice,
+    selectedResources,
     total: production.basePrice + additionsTotal,
   };
 }
@@ -108,13 +162,11 @@ export function changeQuoteQuantity(quote, field, requestedValue) {
     cameras: production.minimumCameras,
     lights: production.minimumLights,
     videos: 1,
-    casting: 0,
     hours: getMinimumProductionHours(quote),
   };
   const maximums = {
     cameras: production.maximumCameras,
     lights: production.maximumLights,
-    casting: production.maximumCasting,
   };
   if (!(field in minimums)) {
     throw new Error(`Cantidad de cotización desconocida: ${field}`);
@@ -144,6 +196,26 @@ export function toggleQuoteExtra(quote, extra) {
   };
 }
 
+export function setQuoteCastingSelections(quote, requestedSelections) {
+  if (!Array.isArray(requestedSelections)) {
+    throw new TypeError("Las selecciones de casting deben ser una lista.");
+  }
+  const selections = requestedSelections.map(normalizeCastingSelection);
+  if (new Set(selections.map((selection) => selection.id)).size !== selections.length) {
+    throw new RangeError("No se puede seleccionar el mismo perfil de casting más de una vez.");
+  }
+  return { ...quote, castingSelections: selections };
+}
+
+export function setQuoteLocationSelection(quote, requestedSelection) {
+  return {
+    ...quote,
+    locationSelection: requestedSelection == null
+      ? null
+      : normalizeLocationSelection(requestedSelection),
+  };
+}
+
 export function changeQuoteOption(quote, field, requestedValue) {
   if (field === "makeup" || field === "professionalSound") {
     if (typeof requestedValue !== "boolean") {
@@ -164,12 +236,58 @@ export function changeQuoteOption(quote, field, requestedValue) {
 
 function addPriceLine(lines, label, requestedQuantity, unitPrice) {
   const quantity = Math.max(0, Math.trunc(Number(requestedQuantity) || 0));
-  if (quantity === 0 || unitPrice <= 0) return;
-  lines.push({
+  if (quantity === 0 || unitPrice <= 0) return null;
+  const line = {
     id: `${label}-${lines.length}`,
     label,
     quantity,
     unitPrice,
     total: quantity * unitPrice,
-  });
+  };
+  lines.push(line);
+  return line;
+}
+
+function normalizeCastingSelection(selection) {
+  return {
+    id: requiredText(selection?.id, "perfil de casting"),
+    name: requiredText(selection?.name, "nombre del perfil"),
+    specialty: String(selection?.specialty || ""),
+    availability: String(selection?.availability || ""),
+    rate: normalizeRate(selection?.rate, true),
+  };
+}
+
+function normalizeLocationSelection(selection) {
+  const rate = normalizeRate(selection?.rate, false);
+  if (rate.unit !== QUOTE_RATE_UNIT.HOURLY) {
+    throw new RangeError("La tarifa de la locación debe ser por hora.");
+  }
+  return {
+    id: requiredText(selection?.id, "locación"),
+    name: requiredText(selection?.name, "nombre de la locación"),
+    provinceName: String(selection?.provinceName || ""),
+    cityName: String(selection?.cityName || ""),
+    address: String(selection?.address || ""),
+    availability: String(selection?.availability || ""),
+    rate,
+  };
+}
+
+function normalizeRate(rate, allowDaily) {
+  const unit = rate?.unit;
+  if (unit !== QUOTE_RATE_UNIT.HOURLY && (!allowDaily || unit !== QUOTE_RATE_UNIT.DAILY)) {
+    throw new RangeError("La modalidad de tarifa seleccionada no es válida.");
+  }
+  const value = Number(rate?.value);
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new RangeError("La tarifa seleccionada debe ser un valor positivo.");
+  }
+  return { unit, value, negotiable: Boolean(rate?.negotiable) };
+}
+
+function requiredText(value, label) {
+  const normalized = String(value || "").trim();
+  if (!normalized) throw new TypeError(`Falta ${label} en la selección.`);
+  return normalized;
 }

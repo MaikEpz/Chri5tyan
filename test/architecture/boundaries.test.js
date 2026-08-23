@@ -23,6 +23,19 @@ function importedSpecifiers(source) {
   ));
 }
 
+function resolveLocalImport(importer, specifier, sourceFiles) {
+  if (!specifier.startsWith(".")) return null;
+  const candidate = path.resolve(path.dirname(importer), specifier);
+  const variants = [
+    candidate,
+    `${candidate}.js`,
+    `${candidate}.jsx`,
+    path.join(candidate, "index.js"),
+    path.join(candidate, "index.jsx"),
+  ];
+  return variants.find((variant) => sourceFiles.has(path.normalize(variant))) ?? null;
+}
+
 async function findForbiddenSpecifiers(layer, isForbidden) {
   const files = await javascriptFiles(path.join(sourceRoot, layer));
   const violations = [];
@@ -78,4 +91,66 @@ test("infraestructura no depende de presentación", async () => {
     (specifier) => /(^|[/\\])presentation([/\\]|$)/.test(specifier),
   );
   assert.deepEqual(violations, []);
+});
+
+test("los features de presentación no dependen de features hermanos", async () => {
+  const featuresRoot = path.join(sourceRoot, "presentation", "features");
+  const files = await javascriptFiles(featuresRoot);
+  const violations = [];
+
+  for (const file of files) {
+    const relative = path.relative(featuresRoot, file).replaceAll("\\", "/");
+    if (relative === "workspace/ProductionWorkspace.jsx") continue;
+    const currentFeature = relative.split("/")[0];
+    const source = await readFile(file, "utf8");
+
+    importedSpecifiers(source).forEach((specifier) => {
+      const siblingMatch = specifier.match(/^\.\.\/(?!\.\.\/)([^/]+)\//);
+      if (siblingMatch && siblingMatch[1] !== currentFeature) {
+        violations.push(`${relative} -> ${specifier}`);
+      }
+    });
+  }
+
+  assert.deepEqual(violations, []);
+});
+
+test("el grafo interno de módulos no contiene dependencias circulares", async () => {
+  const files = await javascriptFiles(sourceRoot);
+  const sourceFiles = new Set(files.map((file) => path.normalize(file)));
+  const graph = new Map();
+
+  for (const file of files) {
+    const source = await readFile(file, "utf8");
+    const dependencies = importedSpecifiers(source)
+      .map((specifier) => resolveLocalImport(file, specifier, sourceFiles))
+      .filter(Boolean);
+    graph.set(path.normalize(file), dependencies);
+  }
+
+  const visiting = new Set();
+  const visited = new Set();
+  const stack = [];
+  const cycles = [];
+
+  function visit(file) {
+    if (visiting.has(file)) {
+      const cycleStart = stack.indexOf(file);
+      cycles.push([...stack.slice(cycleStart), file]
+        .map((entry) => path.relative(sourceRoot, entry))
+        .join(" -> "));
+      return;
+    }
+    if (visited.has(file)) return;
+
+    visiting.add(file);
+    stack.push(file);
+    graph.get(file)?.forEach(visit);
+    stack.pop();
+    visiting.delete(file);
+    visited.add(file);
+  }
+
+  graph.keys().forEach(visit);
+  assert.deepEqual(cycles, []);
 });
