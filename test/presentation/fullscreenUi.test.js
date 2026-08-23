@@ -6,11 +6,9 @@ import {
 } from "../../src/presentation/fullscreenUi.js";
 
 const READY_MOBILE_STATE = {
-  hasCompletedFirstInteraction: true,
   isFullscreen: false,
   isMobile: true,
   monitorOpen: false,
-  onboardingVisible: false,
   suggestionDismissed: false,
   worldReady: true,
 };
@@ -37,15 +35,12 @@ test("no muestra la sugerencia en escritorio ni dentro del monitor", () => {
   }), false);
 });
 
-test("espera a que termine la primera interacción y la guía esté cerrada", () => {
-  assert.equal(shouldShowFullscreenSuggestion({
-    ...READY_MOBILE_STATE,
-    hasCompletedFirstInteraction: false,
-  }), false);
+test("no espera una interacción previa ni el cierre de la guía", () => {
   assert.equal(shouldShowFullscreenSuggestion({
     ...READY_MOBILE_STATE,
     onboardingVisible: true,
-  }), false);
+    hasCompletedFirstInteraction: false,
+  }), true);
 });
 
 test("el botón solo se oculta mientras el monitor está abierto", () => {

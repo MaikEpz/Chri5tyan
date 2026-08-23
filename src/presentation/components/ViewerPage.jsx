@@ -26,8 +26,6 @@ export function ViewerPage({
   const [onboardingRequested, setOnboardingRequested] = useState(
     () => !viewerOnboardingStore.hasSeen(),
   );
-  const [hasStartedFirstInteraction, setHasStartedFirstInteraction] = useState(false);
-  const [hasCompletedFirstInteraction, setHasCompletedFirstInteraction] = useState(false);
   const [isMobile, setIsMobile] = useState(() => (
     window.matchMedia("(pointer: coarse), (max-width: 768px)").matches
   ));
@@ -64,30 +62,27 @@ export function ViewerPage({
 
   const handleMonitorOpen = useCallback((source) => {
     completeOnboarding();
-    setHasStartedFirstInteraction(true);
     monitor.openMonitor(source);
   }, [completeOnboarding, monitor.openMonitor]);
 
   const handleMonitorClose = useCallback(() => {
-    if (hasStartedFirstInteraction) setHasCompletedFirstInteraction(true);
     monitor.requestClose();
-  }, [hasStartedFirstInteraction, monitor.requestClose]);
+  }, [monitor.requestClose]);
 
-  const showOnboarding = shouldShowViewerOnboarding({
+  const onboardingCandidate = shouldShowViewerOnboarding({
     monitorOpen: monitor.open,
     onboardingRequested,
     worldReady,
   });
 
   const showFullscreenSuggestion = shouldShowFullscreenSuggestion({
-    hasCompletedFirstInteraction,
     isFullscreen: fullscreen.isFullscreen,
     isMobile,
     monitorOpen: monitor.open,
-    onboardingVisible: showOnboarding,
     suggestionDismissed,
     worldReady,
   });
+  const showOnboarding = onboardingCandidate && !showFullscreenSuggestion;
   const showFullscreenButton = shouldShowFullscreenButton({ monitorOpen: monitor.open })
     && !showFullscreenSuggestion;
   const showHelpButton = worldReady
